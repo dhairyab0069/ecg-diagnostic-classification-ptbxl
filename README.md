@@ -13,6 +13,9 @@ shuffle-trained model matches the baseline (0.923 vs 0.922), so order above the 
 not used. Shuffling 0.2 s segments, which scrambles the P–QRS–T sequence within beats, lowers macro AUROC by
 0.076, against 0.030 for the control. The effect is largest for ST/T changes (STTC: 0.153 vs 0.043).
 For these five diagnoses, the relevant temporal structure lives inside a single beat.
+Confusion matrices at validation-tuned thresholds add a caveat: even when AUROC barely moves, perturbed
+ECGs are pushed toward "abnormal". NORM recall falls by 0.10 under 1 s shuffles, and the model almost never
+predicts NORM under 0.2 s shuffles.
 
 ## 1. Introduction
 
@@ -108,6 +111,13 @@ so all models see the same perturbations.
 
 *Table 1. Test AUROC, mean ± std over 3 seeds.*
 
+![Training curves](figures/fig1_training_curves.png)
+
+*Figure 1. Training loss and validation macro AUROC per epoch (line: mean of 3 seeds; band: min to max).
+Validation AUROC plateaus around epoch 15–20 and the baseline then declines slightly as training loss keeps
+falling, which is why the best-validation checkpoint is used. The shuffle-trained model fits the training
+set less tightly and declines less.*
+
 The baseline falls in the range reported for 1D CNNs on this task in the PTB-XL benchmark [2]
 (about 0.92–0.93 macro AUROC). HYP is the hardest class, consistent with it being the rarest. Validation
 macro AUROC was 0.924–0.926 for the baseline, close to test, so there is no sign of overfitting to
@@ -122,6 +132,12 @@ the validation fold.
 | Shuffle − roll | −0.001 | −0.000 | −0.006 | −0.014 | **+0.047** |
 
 *Table 2. Macro AUROC drop for the baseline model, mean ± std over 3 seeds.*
+
+![Segment sweep](figures/fig2_segment_sweep.png)
+
+*Figure 2. Macro AUROC drop against segment length (line: mean of 3 seeds; band: ± std). The two curves cross
+between 0.5 s and 0.2 s. Above that scale the shuffle costs no more than the roll control; below it,
+shuffling costs much more.*
 
 Two regimes appear:
 
@@ -144,6 +160,13 @@ Two regimes appear:
 
 *Table 3. AUROC drop by class for the baseline model, mean over 3 seeds.*
 
+![Drop heatmaps](figures/fig3_drop_heatmaps.png)
+
+*Figure 3. Baseline AUROC drop for every class and segment length. Left and middle share one sequential scale.
+The right panel is the difference on a diverging scale: red means shuffling hurts more than the control,
+which is the effect of order; blue means less. Red appears only in the 0.2 s column, and it is darkest for
+STTC.*
+
 At 1 s every class drops by less than 0.01. At 0.2 s, within-beat order matters most for **STTC** (0.110 beyond
 the control) and **NORM** (0.056). It matters least for **MI** and **CD** (about 0.02 each).
 
@@ -160,6 +183,39 @@ Training on shuffled 1 s segments costs nothing on clean test data (Table 1). Th
 to shuffles at 1 s and above and less sensitive at 0.5 s (0.006 vs 0.019 for the baseline). It is still
 hurt by 0.2 s shuffles (0.049), which it never saw in training, and within-beat order still exceeds the control
 there (+0.024).
+
+### 4.5 Confusion matrices
+
+AUROC measures ranking. To see how *decisions* change, we fix one threshold per class and seed, chosen to
+maximize F1 on the validation fold. We then apply it to clean and perturbed test ECGs and pool the 3 seeds.
+
+![Label confusion](figures/fig4_label_confusion.png)
+
+*Figure 4. Multi-label confusion for the baseline. Row *i* contains the test records whose true labels include
+class *i*; column *j* shows the share of them predicted as class *j*. Rows do not sum to 1, because
+records can carry several labels. Off-diagonal cells therefore mix two things: real co-occurrence (for
+example, MI and STTC often appear together) and errors. Right: shuffled minus clean.*
+
+![Per-class confusion](figures/fig5_class_confusion.png)
+
+*Figure 5. Per-class 2×2 confusion matrices, normalized by row (the true class). Top: clean test. Middle:
+0.2 s shuffle. Bottom: difference.*
+
+On clean data, the per-class recall (true-positive rate) is 0.92 for NORM, 0.80 for STTC, 0.78 for MI, 0.69 for CD and 0.60 for HYP. Specificity is
+0.82–0.95. HYP and CD are missed most often, which matches their lower AUROC. The largest off-diagonal
+entries in the clean matrix are HYP→STTC (0.60) and CD→MI (0.45). These reflect clinical co-occurrence as well
+as confusion: hypertrophy often comes with repolarization (ST/T) changes.
+
+Under the 0.2 s shuffle, the decisions collapse in one direction. **The model stops predicting NORM**: it
+predicts NORM for 0.2% of records, against 51% on clean data. It predicts MI and STTC far more often. Their
+false-positive rates rise from 0.11 to 0.51 and from 0.09 to 0.50. Scrambled beats look *abnormal* rather than like any
+specific diagnosis. The NORM AUROC is still 0.86 at this scale, so the ranking is partly preserved; it is
+the score *level* that shifts.
+
+The same thing happens on a smaller scale at 1 s. AUROC changes by less than 0.01, yet at fixed thresholds
+NORM recall falls by 0.10 under the shuffle and by 0.22 under the roll control. Perturbations that barely
+change the ranking still shift the calibration, and cut artifacts by themselves push scores toward
+"abnormal".
 
 ## 5. Discussion
 
@@ -182,6 +238,12 @@ largely contained within a single 0.2 s window.
 shuffle-trained model, which saw cuts during training, loses only 0.006. Exposure to discontinuities, not
 order, accounts for most of that drop. A raw shuffle probe without a control would have overstated the role
 of order.
+
+**Robust ranking is not the same as robust decisions.** The AUROC probe says the baseline is almost
+insensitive to 1 s shuffles. The confusion matrices show that thresholds tuned on clean data drift under the
+same perturbation, with cut artifacts alone costing 0.22 of NORM recall. In practice, a deployed classifier
+would need recalibration whenever the input pipeline introduces splices or gaps. Training with such
+perturbations is one remedy, as the shuffle-trained model's smaller sensitivity suggests.
 
 ## 6. Limitations
 
@@ -206,6 +268,8 @@ pytest
 python scripts/train.py --config configs/default.yaml --seed 0
 python scripts/train.py --config configs/shuffle_trained.yaml --seed 0
 python scripts/aggregate.py runs/resnet1d_baseline      # prints Tables 1-3, writes summary.json
+python scripts/predict.py runs/resnet1d_baseline        # per-record probabilities for the confusion matrices
+python scripts/plot_results.py --out figures            # Figures 1-5
 ```
 
 Override any config value from the command line, e.g. `--set train.epochs=10 model.dropout=0.5`.
@@ -216,6 +280,7 @@ On a SLURM cluster:
 sbatch scripts/slurm_setup.sh                                 # once: env, data, signal cache, tests
 sbatch scripts/slurm_train.sh                                 # baseline, 3 seeds + aggregate
 sbatch scripts/slurm_train.sh configs/shuffle_trained.yaml    # shuffle-trained, 3 seeds + aggregate
+sbatch scripts/slurm_predict.sh                               # saved predictions for both models
 ```
 
 **Compute.** One NVIDIA V100 (SXM2) per job: about 2 s per epoch, about 5 minutes for 3 seeds including all
@@ -233,9 +298,13 @@ src/ecg/engine.py              train, predict and evaluate loops
 src/ecg/metrics.py             AUROC and score lookup
 scripts/train.py               train, select on validation, test, run probes
 scripts/aggregate.py           mean and std across seeds, summary.json
+scripts/predict.py             per-record probabilities, clean and probed, for each checkpoint
+scripts/plot_results.py        report figures
+figures/                       Figures 1-5
 scripts/download_data.py       parallel download from the PhysioNet AWS mirror
 scripts/slurm_setup.sh         one-time SLURM setup
 scripts/slurm_train.sh         3-seed SLURM job (takes a config path)
+scripts/slurm_predict.sh       SLURM job for predict.py on both models
 tests/                         shape, probe and scoring sanity checks
 ```
 

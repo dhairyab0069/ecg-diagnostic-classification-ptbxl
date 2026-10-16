@@ -13,7 +13,7 @@ import torch.nn as nn
 import yaml
 
 from ecg import CLASSES
-from ecg.data import build_splits, make_loader
+from ecg.data import build_loaders
 from ecg.engine import evaluate, train_one_epoch
 from ecg.metrics import score
 from ecg.model import build_model
@@ -37,16 +37,6 @@ def make_run_dir(cfg, seed):
     with open(os.path.join(run_dir, "config.yaml"), "w") as f:
         yaml.safe_dump(cfg, f)
     return run_dir
-
-
-def build_loaders(cfg, device):
-    splits, norm = build_splits(cfg["data"])
-    tcfg, pin = cfg["train"], device.type == "cuda"
-    loaders = {name: make_loader(*splits[name], tcfg["batch_size"] if name == "train" else 512,
-                                 name == "train", tcfg["num_workers"], pin)
-               for name in splits}
-    print("  ".join(f"{name} {len(x)}" for name, (x, _) in splits.items()) + f"  device {device}")
-    return loaders, norm
 
 
 def build_optimizer(model, tcfg, steps_per_epoch):

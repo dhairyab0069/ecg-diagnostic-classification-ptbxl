@@ -77,3 +77,13 @@ def build_splits(cfg):
 def make_loader(x, y, batch_size, shuffle, num_workers=0, pin_memory=False):
     return DataLoader(TensorDataset(x, y), batch_size=batch_size, shuffle=shuffle,
                       drop_last=shuffle, num_workers=num_workers, pin_memory=pin_memory)
+
+
+def build_loaders(cfg, device):
+    splits, norm = build_splits(cfg["data"])
+    tcfg, pin = cfg["train"], device.type == "cuda"
+    loaders = {name: make_loader(*splits[name], tcfg["batch_size"] if name == "train" else 512,
+                                 name == "train", tcfg["num_workers"], pin)
+               for name in splits}
+    print("  ".join(f"{name} {len(x)}" for name, (x, _) in splits.items()) + f"  device {device}")
+    return loaders, norm
