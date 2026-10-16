@@ -1,0 +1,7 @@
+torch>=2.3
+wfdb
+numpy
+pandas
+scikit-learn
+pyyaml
+pytest
