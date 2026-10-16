@@ -217,35 +217,7 @@ NORM recall falls by 0.10 under the shuffle and by 0.22 under the roll control. 
 change the ranking still shift the calibration, and cut artifacts by themselves push scores toward
 "abnormal".
 
-## 5. Discussion
-
-**Order above one beat is neither used nor needed for these labels.** Three results agree. Coarse shuffles
-cost no more than the cut-only control (Table 2). The absolute drops at 1 s are below 0.01 for every class
-(Table 3). A model that never saw ordered beats during training matches the baseline (Table 1). The network
-could see the whole recording (§3.1), so this is a property of the task as labeled, not a limitation of the
-architecture. It fits what the superclasses encode. MI, STTC, CD and HYP are diagnosed mainly from beat
-morphology: Q waves and ST elevation, ST depression and T-wave changes, QRS width, and QRS voltage. PTB-XL
-keeps rhythm statements such as atrial fibrillation in a separate label group that is not used here.
-
-**Order within a beat matters, most for ST/T changes.** STTC is defined by the ST segment and T wave
-*relative to the preceding QRS complex*. Once the waves are reordered, an ST depression is no longer
-recognizable as one, which explains why STTC has the largest within-beat effect. NORM is the second-largest
-effect, plausibly because recognizing a normal ECG requires that every component appear in the expected
-sequence. CD and MI depend less on within-beat order. Their main cues (a wide QRS, pathological Q waves) are
-largely contained within a single 0.2 s window.
-
-**Most of the coarse-scale drop is a cut artifact.** At 0.5 s the baseline loses 0.019 under shuffle, but the
-shuffle-trained model, which saw cuts during training, loses only 0.006. Exposure to discontinuities, not
-order, accounts for most of that drop. A raw shuffle probe without a control would have overstated the role
-of order.
-
-**Robust ranking is not the same as robust decisions.** The AUROC probe says the baseline is almost
-insensitive to 1 s shuffles. The confusion matrices show that thresholds tuned on clean data drift under the
-same perturbation, with cut artifacts alone costing 0.22 of NORM recall. In practice, a deployed classifier
-would need recalibration whenever the input pipeline introduces splices or gaps. Training with such
-perturbations is one remedy, as the shuffle-trained model's smaller sensitivity suggests.
-
-## 6. Limitations
+## 5. Limitations
 
 - **Imperfect control.** The roll control adds a discontinuity *inside* each segment (at the wrap point) as
   well as at the boundaries, and it shifts waveform positions by up to one segment length. It therefore
@@ -259,7 +231,7 @@ perturbations is one remedy, as the shuffle-trained model's smaller sensitivity 
 - **One architecture, one sampling rate.** Results are for a single 1D ResNet at 100 Hz. Higher sampling rates
   preserve more morphology and might shift the within-beat effects.
 
-## 7. Reproducing the results
+## 6. Reproducing the results
 
 ```bash
 pip install -e ".[dev]"
