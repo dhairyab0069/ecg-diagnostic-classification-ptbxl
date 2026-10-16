@@ -301,6 +301,8 @@ scripts/aggregate.py           mean and std across seeds, summary.json
 scripts/predict.py             per-record probabilities, clean and probed, for each checkpoint
 scripts/plot_results.py        report figures
 figures/                       Figures 1-5
+logs/                          SLURM logs from the reported runs (see logs/README.md)
+runs/                          per-seed results.json, history.json, config.yaml and summary.json
 scripts/download_data.py       parallel download from the PhysioNet AWS mirror
 scripts/slurm_setup.sh         one-time SLURM setup
 scripts/slurm_train.sh         3-seed SLURM job (takes a config path)

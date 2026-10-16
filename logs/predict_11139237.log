@@ -1,0 +1,12 @@
+train 17084  val 2146  test 2158  device cuda
+wrote runs/resnet1d_baseline/seed0/preds.npz
+train 17084  val 2146  test 2158  device cuda
+wrote runs/resnet1d_baseline/seed1/preds.npz
+train 17084  val 2146  test 2158  device cuda
+wrote runs/resnet1d_baseline/seed2/preds.npz
+train 17084  val 2146  test 2158  device cuda
+wrote runs/resnet1d_shuffle_trained/seed0/preds.npz
+train 17084  val 2146  test 2158  device cuda
+wrote runs/resnet1d_shuffle_trained/seed1/preds.npz
+train 17084  val 2146  test 2158  device cuda
+wrote runs/resnet1d_shuffle_trained/seed2/preds.npz

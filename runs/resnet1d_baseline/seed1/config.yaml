@@ -1,0 +1,44 @@
+augment:
+  noise_std: 0.05
+  random_shift: true
+  scale_max: 1.2
+  scale_min: 0.8
+  shuffle: 0
+data:
+  root: data/ptb-xl/1.0.3
+  sampling_rate: 100
+  test_fold: 10
+  train_folds:
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  val_fold: 9
+model:
+  dropout: 0.3
+  kernel_size: 7
+  widths:
+  - 64
+  - 128
+  - 256
+  - 256
+name: resnet1d_baseline
+out_dir: runs
+probe:
+  enabled: true
+  num_segments:
+  - 2
+  - 5
+  - 10
+  - 20
+  - 50
+train:
+  batch_size: 128
+  epochs: 30
+  lr: 0.003
+  num_workers: 2
+  weight_decay: 0.01
