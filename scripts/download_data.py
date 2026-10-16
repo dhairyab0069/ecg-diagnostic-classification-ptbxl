@@ -13,6 +13,8 @@ from concurrent.futures import ThreadPoolExecutor
 
 import pandas as pd
 
+from ecg.data import record_column
+
 BASE = "https://physionet-open.s3.amazonaws.com/ptb-xl/1.0.3/"
 
 
@@ -35,8 +37,7 @@ def main():
     for f in ["ptbxl_database.csv", "scp_statements.csv"]:
         fetch(f, args.out)
     df = pd.read_csv(os.path.join(args.out, "ptbxl_database.csv"))
-    col = "filename_lr" if args.rate == 100 else "filename_hr"
-    files = [f"{r}.{ext}" for r in df[col] for ext in ("dat", "hea")]
+    files = [f"{r}.{ext}" for r in df[record_column(args.rate)] for ext in ("dat", "hea")]
     print(f"Downloading {len(files)} files...")
     with ThreadPoolExecutor(args.workers) as pool:
         for i, _ in enumerate(pool.map(lambda f: fetch(f, args.out), files), 1):

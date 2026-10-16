@@ -1,6 +1,7 @@
 import torch
 
 from ecg import CLASSES
+from ecg.metrics import score
 from ecg.model import ResNet1D
 from ecg.transforms import augment, roll_segments, shuffle_segments
 
@@ -41,3 +42,8 @@ def test_roll_keeps_segment_order():
 def test_augment_with_shuffle():
     x = torch.randn(4, 12, 1000)
     assert augment(x, shuffle=10).shape == x.shape
+
+
+def test_score_reads_macro_and_class():
+    entry = {"macro": 0.9, "per_class": {c: 0.5 for c in CLASSES}}
+    assert score(entry, "macro") == 0.9 and score(entry, "MI") == 0.5

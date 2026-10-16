@@ -11,6 +11,34 @@ from torch.utils.data import DataLoader, TensorDataset
 from ecg import CLASSES
 
 
+def record_column(sampling_rate):
+    """Column of ptbxl_database.csv holding record paths at this sampling rate."""
+    return "filename_lr" if sampling_rate == 100 else "filename_hr"
+
+
+def load_labels(root):
+    """Return the metadata table and each record's set of diagnostic superclasses,
+    dropping records with no diagnostic statement."""
+    df = pd.read_csv(os.path.join(root, "ptbxl_database.csv"), index_col="ecg_id")
+    df.scp_codes = df.scp_codes.apply(ast.literal_eval)
+    scp = pd.read_csv(os.path.join(root, "scp_statements.csv"), index_col=0)
+    scp = scp[scp.diagnostic == 1]
+    labels = df.scp_codes.apply(lambda codes: {scp.loc[c, "diagnostic_class"] for c in codes if c in scp.index})
+    keep = labels.apply(len) > 0
+    return df[keep], labels[keep]
+
+
+def read_signals(root, paths):
+    print(f"Reading {len(paths)} records (first run only, then cached)...")
+    return np.stack([wfdb.rdsamp(os.path.join(root, f))[0] for f in paths]).astype(np.float32)
+
+
+def save_cache(path, **arrays):
+    tmp = f"{path}.{os.getpid()}.tmp.npz"  # atomic write, in case two jobs build the cache at once
+    np.savez(tmp, **arrays)
+    os.replace(tmp, path)
+
+
 def load_ptbxl(root, sampling_rate=100):
     """Return signals (N, T, 12), multi-hot labels (N, 5), and stratified folds (N,)."""
     cache = os.path.join(root, f"cache_{sampling_rate}hz.npz")
@@ -18,26 +46,11 @@ def load_ptbxl(root, sampling_rate=100):
         d = np.load(cache)
         return d["X"], d["Y"], d["fold"]
 
-    df = pd.read_csv(os.path.join(root, "ptbxl_database.csv"), index_col="ecg_id")
-    df.scp_codes = df.scp_codes.apply(ast.literal_eval)
-    scp = pd.read_csv(os.path.join(root, "scp_statements.csv"), index_col=0)
-    scp = scp[scp.diagnostic == 1]
-
-    def to_superclasses(codes):
-        return {scp.loc[c, "diagnostic_class"] for c in codes if c in scp.index}
-
-    labels = df.scp_codes.apply(to_superclasses)
-    keep = labels.apply(len) > 0
-    df, labels = df[keep], labels[keep]
-
-    col = "filename_lr" if sampling_rate == 100 else "filename_hr"
-    print(f"Reading {len(df)} records (first run only, then cached)...")
-    X = np.stack([wfdb.rdsamp(os.path.join(root, f))[0] for f in df[col]]).astype(np.float32)
+    df, labels = load_labels(root)
+    X = read_signals(root, df[record_column(sampling_rate)])
     Y = np.array([[c in lab for c in CLASSES] for lab in labels], dtype=np.float32)
     fold = df.strat_fold.values
-    tmp = f"{cache}.{os.getpid()}.tmp.npz"  # atomic write, in case two jobs build the cache at once
-    np.savez(tmp, X=X, Y=Y, fold=fold)
-    os.replace(tmp, cache)
+    save_cache(cache, X=X, Y=Y, fold=fold)
     return X, Y, fold
 
 

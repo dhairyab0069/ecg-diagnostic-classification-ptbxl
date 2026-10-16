@@ -1,6 +1,7 @@
 """Training and inference loops."""
 import torch
 
+from ecg.metrics import auroc
 from ecg.transforms import augment
 
 
@@ -34,3 +35,9 @@ def predict(model, loader, device, transform=None):
         probs.append(torch.sigmoid(logits.float()).cpu())
         targets.append(y)
     return torch.cat(probs).numpy(), torch.cat(targets).numpy()
+
+
+def evaluate(model, loader, device, transform=None):
+    """Return {"macro": AUROC, "per_class": {class: AUROC}} on a loader."""
+    macro, per_class = auroc(*predict(model, loader, device, transform))
+    return {"macro": macro, "per_class": per_class}
