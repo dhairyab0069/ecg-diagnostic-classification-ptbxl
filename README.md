@@ -1,114 +1,252 @@
-# ECG Diagnostic Classification on PTB-XL
+# At What Timescale Does Order Matter? A Segment-Shuffle Probe for ECG Diagnosis on PTB-XL
 
-Multi-label classification of 12-lead ECGs into five diagnostic superclasses
-(NORM, MI, STTC, CD, HYP) with a 1D ResNet in PyTorch, plus a temporal probe
-that tests how much each diagnosis depends on rhythm and timing.
+## Abstract
 
-## Question
+We train a 1D ResNet for multi-label classification of 12-lead ECGs into the five diagnostic
+superclasses of PTB-XL (NORM, MI, STTC, CD, HYP) and reach **0.922 ± 0.001 test macro AUROC** over three
+seeds. To ask whether the model relies on temporal order or on local waveform shape, we re-evaluate it on
+test ECGs cut into *k* equal segments that are then randomly permuted, sweeping the segment length from
+5 s to 0.2 s. Two checks make the probe interpretable: a *roll control* that introduces the same cuts while
+keeping segment order, and a model *trained* on shuffled 1 s segments. Shuffling segments of 0.5 s or longer
+costs no more than the roll control (macro drop 0.004 at 1 s vs 0.010 for the control), and the
+shuffle-trained model matches the baseline (0.923 vs 0.922), so order above the scale of one heartbeat is
+not used. Shuffling 0.2 s segments, which scrambles the P–QRS–T sequence within beats, lowers macro AUROC by
+0.076, against 0.030 for the control. The effect is largest for ST/T changes (STTC: 0.153 vs 0.043).
+For these five diagnoses, the relevant temporal structure lives inside a single beat.
 
-Does the model use temporal structure, or mostly local waveform shape?
-The probe re-evaluates the trained model on test ECGs whose 1-second segments
-are randomly shuffled. Beat shape survives, but rhythm and order do not.
-The per-class AUROC drop shows which diagnoses depend on temporal structure.
+## 1. Introduction
 
-Three checks make the probe interpretable:
+A 12-lead ECG carries information at two timescales: the shape of each beat (P wave, QRS complex, ST
+segment, T wave) and the rhythm across beats (RR intervals, regularity, ectopy). A convolutional network
+trained end-to-end could use either. Knowing which one it uses matters for interpreting its errors, for
+choosing augmentations, and for knowing which diagnoses it can be trusted on.
 
-- **Segment sweep** (2, 5, 10, 20, 50 segments): at 50 segments (0.2 s) the cuts split individual beats.
-- **Roll control**: cuts at the same boundaries but keeps segment order, separating the effect of
-  discontinuities at the cuts from the effect of lost temporal order.
-- **Shuffle-trained model** (`configs/shuffle_trained.yaml`): if a model trained on shuffled ECGs matches
-  the baseline on a class, that diagnosis does not need temporal order.
+We measure this directly with a perturbation probe: keep local waveform content but destroy order above a
+chosen timescale, and see how much performance drops. A raw drop is ambiguous, for two reasons:
 
-## Setup
+1. **Cut artifacts.** Permuting segments creates discontinuities at every cut, which the model never saw in
+   training. Some of the drop may come from those artifacts rather than from lost order.
+2. **Use vs need.** A small drop shows the *model* does not use order. It does not show the *task* does not
+   need it.
+
+We address (1) with a control that cuts at the same boundaries but preserves order, and (2) by training a
+second model on shuffled inputs.
+
+## 2. Data
+
+PTB-XL v1.0.3 [1] contains 21,799 clinical 10 s, 12-lead recordings from 18,869 patients, annotated with
+SCP-ECG statements. We use the 100 Hz version (1,000 samples per lead), map diagnostic statements to the five
+superclasses, and keep the 21,388 records with at least one diagnostic label. Records can carry several
+labels.
+
+| Superclass | Meaning | Records | Prevalence |
+|---|---|---|---|
+| NORM | Normal ECG | 9,514 | 44.5% |
+| MI | Myocardial infarction | 5,469 | 25.6% |
+| STTC | ST/T change | 5,235 | 24.5% |
+| CD | Conduction disturbance | 4,898 | 22.9% |
+| HYP | Hypertrophy | 2,649 | 12.4% |
+
+We use the official stratified folds, which assign every patient to a single fold: folds 1–8 for training
+(17,084 records), fold 9 for validation (2,146) and fold 10 for testing (2,158). Each lead is z-scored with
+mean and standard deviation computed on the training folds only.
+
+## 3. Methods
+
+### 3.1 Model
+
+A 1D ResNet [3] with 4.08 M parameters:
+
+- **Stem:** convolution (kernel 15, stride 2, 64 channels), batch norm, ReLU, max-pool (stride 2).
+- **Body:** four stages of two residual blocks each, with widths 64, 128, 256, 256 and strides 1, 2, 2, 2.
+  Each block is two kernel-7 convolutions with batch norm, plus a 1×1 projection on the skip path when the
+  shape changes.
+- **Head:** global average and global max pooling over time, concatenated, then dropout 0.3 and a linear
+  layer with five sigmoid outputs.
+
+The receptive field of each final feature is **1,291 samples (12.9 s)**, measured from input gradients. That
+is longer than the 10 s recording, so the architecture can in principle see the whole rhythm.
+
+### 3.2 Training
+
+Binary cross-entropy loss, AdamW [4] (learning rate 3e-3, weight decay 0.01), a one-cycle learning-rate
+schedule, batch size 128, 30 epochs, and mixed precision. Augmentation applies a random amplitude scale in
+[0.8, 1.2], a random circular time shift, and Gaussian noise (σ = 0.05). The checkpoint with the best
+validation macro AUROC is kept; the best epoch fell between 14 and 22 across runs. The test fold is used
+once per run. Every experiment is repeated with seeds 0, 1 and 2, and we report mean ± standard deviation.
+
+### 3.3 Temporal probes
+
+Each test ECG of length *T* is cut into *k* segments of length *T/k*, with *k* ∈ {2, 5, 10, 20, 50}
+(5 s down to 0.2 s). A resting heartbeat lasts roughly 0.6–1 s, so *k* ≤ 10 keeps most beats intact and
+*k* = 50 cuts through them.
+
+- **Shuffle.** Segments are randomly permuted, independently per ECG and identically across leads. Content
+  within each segment is untouched; order between segments is destroyed.
+- **Roll control.** Segments stay in their original order, but each one is circularly shifted by a random
+  offset within itself. This creates discontinuities at the boundaries, as the shuffle does, while keeping
+  coarse order. The drop attributable to lost order is estimated as *shuffle drop − roll drop*.
+- **Shuffle-trained model.** Identical to the baseline, except that every training batch is shuffled into
+  10 segments (1 s) before the other augmentations. If it matches the baseline on a class, that class does
+  not need order above 1 s.
+
+The drop is the clean test AUROC minus the probed test AUROC. The random permutations and shifts are seeded,
+so all models see the same perturbations.
+
+## 4. Results
+
+### 4.1 Classification
+
+| Class | Baseline | Shuffle-trained |
+|---|---|---|
+| NORM | 0.944 ± 0.001 | 0.943 ± 0.002 |
+| MI | 0.922 ± 0.003 | 0.923 ± 0.004 |
+| STTC | 0.932 ± 0.002 | 0.932 ± 0.001 |
+| CD | 0.916 ± 0.003 | 0.920 ± 0.001 |
+| HYP | 0.896 ± 0.003 | 0.894 ± 0.003 |
+| **Macro** | **0.922 ± 0.001** | **0.923 ± 0.001** |
+
+*Table 1. Test AUROC, mean ± std over 3 seeds.*
+
+The baseline falls in the range reported for 1D CNNs on this task in the PTB-XL benchmark [2]
+(about 0.92–0.93 macro AUROC). HYP is the hardest class, consistent with it being the rarest. Validation
+macro AUROC was 0.924–0.926 for the baseline, close to test, so there is no sign of overfitting to
+the validation fold.
+
+### 4.2 Segment sweep
+
+| Segments (length) | 2 (5 s) | 5 (2 s) | 10 (1 s) | 20 (0.5 s) | 50 (0.2 s) |
+|---|---|---|---|---|---|
+| Shuffle | 0.001 ± 0.000 | 0.001 ± 0.001 | 0.004 ± 0.001 | 0.019 ± 0.005 | **0.076 ± 0.011** |
+| Roll control | 0.001 ± 0.001 | 0.002 ± 0.001 | 0.010 ± 0.003 | 0.032 ± 0.007 | 0.030 ± 0.006 |
+| Shuffle − roll | −0.001 | −0.000 | −0.006 | −0.014 | **+0.047** |
+
+*Table 2. Macro AUROC drop for the baseline model, mean ± std over 3 seeds.*
+
+Two regimes appear:
+
+- **Segments of 0.5 s or longer.** Both drops are small, and the shuffle is never worse than the control:
+  *shuffle − roll* is zero or negative. Destroying order adds nothing beyond the cuts themselves.
+- **0.2 s segments.** The shuffle drop rises sharply to 0.076 while the control stays at 0.030, leaving a
+  gap of 0.047. Segments this short separate the P wave, QRS complex and T wave, so shuffling them scrambles
+  the sequence inside each beat. The control keeps that sequence, apart from small shifts.
+
+### 4.3 Per-class effects
+
+| Class | Shuffle, 1 s | Roll, 1 s | Shuffle, 0.2 s | Roll, 0.2 s | Shuffle − roll, 0.2 s |
+|---|---|---|---|---|---|
+| NORM | 0.006 | 0.011 | 0.080 | 0.024 | 0.056 |
+| MI | 0.002 | 0.006 | 0.036 | 0.021 | 0.016 |
+| STTC | 0.006 | 0.014 | **0.153** | 0.043 | **0.110** |
+| CD | 0.003 | 0.010 | 0.056 | 0.039 | 0.016 |
+| HYP | 0.002 | 0.007 | 0.055 | 0.020 | 0.035 |
+| **Macro** | **0.004** | **0.010** | **0.076** | **0.030** | **0.047** |
+
+*Table 3. AUROC drop by class for the baseline model, mean over 3 seeds.*
+
+At 1 s every class drops by less than 0.01. At 0.2 s, within-beat order matters most for **STTC** (0.110 beyond
+the control) and **NORM** (0.056). It matters least for **MI** and **CD** (about 0.02 each).
+
+### 4.4 Shuffle-trained model
+
+| Segments (length) | 2 (5 s) | 5 (2 s) | 10 (1 s) | 20 (0.5 s) | 50 (0.2 s) |
+|---|---|---|---|---|---|
+| Shuffle | −0.000 | −0.000 | 0.000 | 0.006 | 0.049 |
+| Roll control | −0.001 | −0.001 | 0.002 | 0.021 | 0.025 |
+
+*Table 4. Macro AUROC drop for the shuffle-trained model, mean over 3 seeds.*
+
+Training on shuffled 1 s segments costs nothing on clean test data (Table 1). The model becomes insensitive
+to shuffles at 1 s and above and less sensitive at 0.5 s (0.006 vs 0.019 for the baseline). It is still
+hurt by 0.2 s shuffles (0.049), which it never saw in training, and within-beat order still exceeds the control
+there (+0.024).
+
+## 5. Discussion
+
+**Order above one beat is neither used nor needed for these labels.** Three results agree. Coarse shuffles
+cost no more than the cut-only control (Table 2). The absolute drops at 1 s are below 0.01 for every class
+(Table 3). A model that never saw ordered beats during training matches the baseline (Table 1). The network
+could see the whole recording (§3.1), so this is a property of the task as labeled, not a limitation of the
+architecture. It fits what the superclasses encode. MI, STTC, CD and HYP are diagnosed mainly from beat
+morphology: Q waves and ST elevation, ST depression and T-wave changes, QRS width, and QRS voltage. PTB-XL
+keeps rhythm statements such as atrial fibrillation in a separate label group that is not used here.
+
+**Order within a beat matters, most for ST/T changes.** STTC is defined by the ST segment and T wave
+*relative to the preceding QRS complex*. Once the waves are reordered, an ST depression is no longer
+recognizable as one, which explains why STTC has the largest within-beat effect. NORM is the second-largest
+effect, plausibly because recognizing a normal ECG requires that every component appear in the expected
+sequence. CD and MI depend less on within-beat order. Their main cues (a wide QRS, pathological Q waves) are
+largely contained within a single 0.2 s window.
+
+**Most of the coarse-scale drop is a cut artifact.** At 0.5 s the baseline loses 0.019 under shuffle, but the
+shuffle-trained model, which saw cuts during training, loses only 0.006. Exposure to discontinuities, not
+order, accounts for most of that drop. A raw shuffle probe without a control would have overstated the role
+of order.
+
+## 6. Limitations
+
+- **Imperfect control.** The roll control adds a discontinuity *inside* each segment (at the wrap point) as
+  well as at the boundaries, and it shifts waveform positions by up to one segment length. It therefore
+  likely overstates the cost of the cuts, which is why *shuffle − roll* is slightly negative at 1–0.5 s. The
+  main conclusion does not rely on the control: the absolute drop at 1 s is only 0.004.
+- **Label scope.** Only the five diagnostic superclasses are tested. Rhythm labels (e.g. atrial fibrillation,
+  sinus arrhythmia) should show large coarse-scale drops and would be the natural positive control.
+- **Statistical precision.** Three seeds give tight seed-to-seed spread (std ≤ 0.005 on test AUROC), but test-set
+  sampling uncertainty is not captured. Bootstrap confidence intervals over the 2,158 test records would be the
+  next step.
+- **One architecture, one sampling rate.** Results are for a single 1D ResNet at 100 Hz. Higher sampling rates
+  preserve more morphology and might shift the within-beat effects.
+
+## 7. Reproducing the results
 
 ```bash
 pip install -e ".[dev]"
-python scripts/download_data.py --rate 100   # fast AWS mirror, ~0.5 GB
+python scripts/download_data.py --rate 100              # PhysioNet AWS mirror, ~0.5 GB
 pytest
-```
-
-## Run
-
-```bash
 python scripts/train.py --config configs/default.yaml --seed 0
-python scripts/aggregate.py runs/resnet1d_baseline
+python scripts/train.py --config configs/shuffle_trained.yaml --seed 0
+python scripts/aggregate.py runs/resnet1d_baseline      # prints Tables 1-3, writes summary.json
 ```
 
-Override any config value from the command line:
+Override any config value from the command line, e.g. `--set train.epochs=10 model.dropout=0.5`.
+
+On a SLURM cluster:
 
 ```bash
-python scripts/train.py --set train.epochs=10 model.dropout=0.5
+sbatch scripts/slurm_setup.sh                                 # once: env, data, signal cache, tests
+sbatch scripts/slurm_train.sh                                 # baseline, 3 seeds + aggregate
+sbatch scripts/slurm_train.sh configs/shuffle_trained.yaml    # shuffle-trained, 3 seeds + aggregate
 ```
 
-On SLURM:
+**Compute.** One NVIDIA V100 (SXM2) per job: about 2 s per epoch, about 5 minutes for 3 seeds including all
+probes.
 
-```bash
-sbatch scripts/slurm_setup.sh                                     # once: env, data, cache, tests
-sbatch scripts/slurm_train.sh                                     # baseline, 3 seeds + aggregate
-sbatch scripts/slurm_train.sh configs/shuffle_trained.yaml        # shuffle-trained variant
-```
-
-## Protocol
-
-- Dataset: PTB-XL v1.0.3, 100 Hz, 10 s recordings
-- Split: official stratified folds (1 to 8 train, 9 validation, 10 test)
-- Normalization: per-lead z-score using training-set statistics only
-- Model selection: best validation macro AUROC
-- Metric: macro AUROC on the test fold, mean and std over 3 seeds
-
-## Results
-
-Test fold, mean ± std over 3 seeds. Drops are test AUROC minus probed AUROC for the baseline model
-(10 segments = 1 s each, 50 segments = 0.2 s each).
-
-| Class | Baseline test AUROC | Shuffle-trained test AUROC | Drop, shuffle 10 seg | Drop, roll 10 seg | Drop, shuffle 50 seg | Drop, roll 50 seg |
-|-------|------|------|------|------|------|------|
-| NORM | 0.944 ± 0.001 | 0.943 ± 0.002 | 0.006 | 0.011 | 0.080 | 0.024 |
-| MI | 0.922 ± 0.003 | 0.923 ± 0.004 | 0.002 | 0.006 | 0.036 | 0.021 |
-| STTC | 0.932 ± 0.002 | 0.932 ± 0.001 | 0.006 | 0.014 | 0.153 | 0.043 |
-| CD | 0.916 ± 0.003 | 0.920 ± 0.001 | 0.003 | 0.010 | 0.056 | 0.039 |
-| HYP | 0.896 ± 0.003 | 0.894 ± 0.003 | 0.002 | 0.007 | 0.055 | 0.020 |
-| **Macro** | 0.922 ± 0.001 | 0.923 ± 0.001 | 0.004 | 0.010 | 0.076 | 0.029 |
-
-Macro AUROC drop for the baseline across the segment sweep:
-
-| Segments | 2 | 5 | 10 | 20 | 50 |
-|----------|---|---|----|----|----|
-| Shuffle | 0.001 | 0.001 | 0.004 | 0.019 | 0.076 |
-| Roll control | 0.001 | 0.002 | 0.010 | 0.032 | 0.030 |
-
-Full tables, including the shuffle-trained model's probes, are printed by `scripts/aggregate.py`.
-
-### Findings
-
-- **Order at the 1 s scale and above is not needed.** At 2 to 20 segments the shuffle costs no more than the
-  roll control, which keeps segment order, so the drop comes from the cuts rather than from lost order.
-  A model trained on shuffled 1 s segments matches the baseline (0.923 vs 0.922 macro).
-- **Order within a beat matters.** At 50 segments (0.2 s, shorter than one beat) the shuffle drop (0.076)
-  is well above the control (0.030), because the P wave, QRS complex and T wave no longer appear in order.
-- **STTC depends on it most** (0.153 drop vs 0.043 control at 50 segments), consistent with ST and T changes
-  being defined relative to the QRS complex that precedes them.
-- Caveat: the roll control adds a discontinuity inside each segment as well as at the boundaries, so it
-  likely overstates the cost of the cuts; the conclusion that coarse order is unused does not depend on it,
-  since the shuffle drop at 10 segments is only 0.004 in absolute terms.
-
-## Structure
+**Code layout.**
 
 ```
-configs/default.yaml     hyperparameters and paths
-src/ecg/data.py          loading, label aggregation, splits
-src/ecg/model.py         1D ResNet
-src/ecg/transforms.py    augmentation, shuffle probe, roll control
-src/ecg/engine.py        train and predict loops
-src/ecg/metrics.py       AUROC
-scripts/train.py         training entry point
-scripts/aggregate.py     mean and std across seeds
-scripts/download_data.py parallel download from the PhysioNet AWS mirror
-scripts/slurm_setup.sh   one-time SLURM setup
-scripts/slurm_train.sh   3-seed SLURM job (takes a config path)
-tests/                   shape and probe sanity checks
+configs/default.yaml           baseline hyperparameters, probe segment counts
+configs/shuffle_trained.yaml   same, trained on 10-segment shuffles
+src/ecg/data.py                loading, label aggregation, folds, normalization, signal cache
+src/ecg/model.py               1D ResNet
+src/ecg/transforms.py          augmentation, shuffle probe, roll control
+src/ecg/engine.py              train, predict and evaluate loops
+src/ecg/metrics.py             AUROC and score lookup
+scripts/train.py               train, select on validation, test, run probes
+scripts/aggregate.py           mean and std across seeds, summary.json
+scripts/download_data.py       parallel download from the PhysioNet AWS mirror
+scripts/slurm_setup.sh         one-time SLURM setup
+scripts/slurm_train.sh         3-seed SLURM job (takes a config path)
+tests/                         shape, probe and scoring sanity checks
 ```
 
-## Reference
+## References
 
-Wagner et al., PTB-XL, a large publicly available electrocardiography dataset. Scientific Data, 2020.
+[1] P. Wagner, N. Strodthoff, R.-D. Bousseljot, D. Kreiseler, F. I. Lunze, W. Samek, T. Schaeffter.
+PTB-XL, a large publicly available electrocardiography dataset. *Scientific Data*, 7, 154, 2020.
+
+[2] N. Strodthoff, P. Wagner, T. Schaeffter, W. Samek. Deep learning for ECG analysis: benchmarks and
+insights from PTB-XL. *IEEE Journal of Biomedical and Health Informatics*, 25(5), 1519–1528, 2021.
+
+[3] K. He, X. Zhang, S. Ren, J. Sun. Deep residual learning for image recognition. *CVPR*, 2016.
+
+[4] I. Loshchilov, F. Hutter. Decoupled weight decay regularization. *ICLR*, 2019.
