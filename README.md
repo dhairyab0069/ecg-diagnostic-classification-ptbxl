@@ -148,6 +148,13 @@ The random shuffles are fixed by a seed, so every model is tested on exactly the
 highest). The score levels off around pass 15–20, after which the main model gets slightly worse while its
 training loss keeps falling. That is why we keep the best version rather than the last one.*
 
+![ROC curves](figures/fig2_roc_curves.png)
+
+*Figure 2. ROC curve for each label on the test set. Each curve shows, for every possible cut-off, how many
+real cases the model catches (up) against how many false alarms it raises (right). A curve hugging the top-left
+corner is better; the dashed diagonal is guessing. AUROC is the area under the curve. The three activation
+functions are shown together; their curves nearly overlap (see Section 5).*
+
 The main model scores in the same range as similar models in the published PTB-XL benchmark [2] (about
 0.92–0.93). HYP is the hardest label, which fits with it being the rarest. Validation scores (0.924–0.926)
 are close to test scores, so the model did not overfit to the validation group.
@@ -162,9 +169,9 @@ are close to test scores, so the model did not overfit to the validation group.
 
 *Table 2. Drop in macro AUROC for the main model, average ± spread over 3 runs.*
 
-![Segment sweep](figures/fig2_segment_sweep.png)
+![Segment sweep](figures/fig3_segment_sweep.png)
 
-*Figure 2. Score drop for each piece length (line: average of 3 runs; band: ± spread). The two lines cross
+*Figure 3. Score drop for each piece length (line: average of 3 runs; band: ± spread). The two lines cross
 between 0.5 and 0.2 seconds.*
 
 - **Pieces of 0.5 seconds or longer:** both drops are small, and shuffling never hurts more than the
@@ -210,9 +217,9 @@ AUROC only measures whether the model *ranks* ECGs correctly. To see its actual 
 cut-off per label (chosen on the validation group to balance missed and false alarms) and count how often it
 is right on normal and shuffled test ECGs, combining all 3 runs.
 
-![Label confusion](figures/fig3_label_confusion.png)
+![Label confusion](figures/fig4_label_confusion.png)
 
-*Figure 3. Which labels the main model predicts. Row = the true label, column = the predicted label, value =
+*Figure 4. Which labels the main model predicts. Row = the true label, column = the predicted label, value =
 share of that row's ECGs given that prediction. Rows don't add up to 1 because one ECG can have several
 labels, so some off-diagonal values are real overlaps (heart attacks often come with ST/T changes) rather
 than mistakes. Right: shuffled minus normal.*
@@ -248,9 +255,13 @@ settings, the same 3 seeds and the same shuffle tests.
 
 *Table 5. Test AUROC for each activation function, average ± spread over 3 runs.*
 
-![Activation training curves](figures/fig4_activation_training.png)
+![Activation AUROC](figures/fig5_activation_auroc.png)
 
-*Figure 4. Training loss and validation score after each pass, for each activation function (line: average
+*Figure 5. Test AUROC for each label and activation function (dot: average of 3 runs; line: ± spread).*
+
+![Activation training curves](figures/fig6_activation_training.png)
+
+*Figure 6. Training loss and validation score after each pass, for each activation function (line: average
 of 3 runs; band: lowest to highest). tanh starts noticeably slower in the first 10 passes, then catches up
 most of the way.*
 
@@ -287,9 +298,9 @@ every activation, which keeps that from happening much in the first place.
 
 *Table 7. How much order inside a heartbeat matters, for each activation function.*
 
-![Activation segment sweep](figures/fig5_activation_sweep.png)
+![Activation segment sweep](figures/fig7_activation_sweep.png)
 
-*Figure 5. Drop in macro AUROC for each piece length and activation function. The three lines nearly
+*Figure 7. Drop in macro AUROC for each piece length and activation function. The three lines nearly
 overlap.*
 
 **The main finding holds for all three.** Shuffling whole beats (1 second or longer) costs almost nothing,
@@ -332,8 +343,8 @@ python scripts/train.py --config configs/shuffle_trained.yaml --seed 0   # shuff
 python scripts/train.py --config configs/leaky_relu.yaml --seed 0        # LeakyReLU model
 python scripts/train.py --config configs/tanh.yaml --seed 0              # tanh model
 python scripts/aggregate.py runs/resnet1d_baseline      # prints Tables 1-3, writes summary.json
-python scripts/predict.py runs/resnet1d_baseline        # saves predictions for Figure 3
-python scripts/plot_results.py --out figures            # makes Figures 1-5 and activation_metrics.csv
+python scripts/predict.py runs/resnet1d_baseline        # saves predictions for Figures 2 and 4 (repeat per model)
+python scripts/plot_results.py --out figures            # makes Figures 1-7 and activation_metrics.csv
 ```
 
 You can change any setting from the command line, e.g. `--set train.epochs=10 model.dropout=0.5`. To try a
@@ -347,7 +358,8 @@ sbatch scripts/slurm_train.sh                                 # main model, 3 ru
 sbatch scripts/slurm_train.sh configs/shuffle_trained.yaml    # shuffle-trained model
 sbatch scripts/slurm_train.sh configs/leaky_relu.yaml         # LeakyReLU model
 sbatch scripts/slurm_train.sh configs/tanh.yaml               # tanh model
-sbatch scripts/slurm_predict.sh                               # saved predictions for both models
+sbatch scripts/slurm_predict.sh                               # saved predictions (baseline, shuffle-trained)
+sbatch scripts/slurm_predict.sh runs/resnet1d_leaky_relu runs/resnet1d_tanh   # same for the new models
 ```
 
 **Hardware.** One NVIDIA V100 GPU per job: about 2 seconds per pass, about 5 minutes for all 3 runs including
@@ -371,7 +383,7 @@ scripts/predict.py             saves per-ECG predictions
 scripts/plot_results.py        makes the figures
 scripts/download_data.py       downloads PTB-XL
 scripts/slurm_*.sh             cluster job scripts
-figures/                       Figures 1-5, activation_metrics.csv
+figures/                       Figures 1-7, extra_*.png supporting figures, activation_metrics.csv
 report/                        short activation-function report (Markdown and PDF)
 logs/                          cluster logs from the reported runs (see logs/README.md)
 runs/                          results for every run, plus summary.json per model
