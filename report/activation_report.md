@@ -57,8 +57,6 @@ the cuts themselves rather than from losing the order.
 | HYP | 0.896 | 0.895 | 0.890 |
 | **Macro** | **0.922 ± 0.001** | **0.922 ± 0.002** | **0.919 ± 0.002** |
 
-![Test AUROC for each condition and activation. Dots are the average of 3 runs; lines show the spread.](../figures/fig6_activation_auroc.png)
-
 - **LeakyReLU is the same as ReLU.** No condition differs by more than 0.003, which is about how much the
   score moves between runs anyway.
 - **tanh is 0.003 lower overall,** mostly on MI and HYP (0.006 lower on each). The gap is small but
@@ -70,7 +68,7 @@ activation, which mostly prevents that problem. So there is little for LeakyReLU
 
 ## 3. Training
 
-![Training loss and validation score after each pass over the data (line: average of 3 runs; band: lowest to highest).](../figures/fig7_activation_training.png)
+![Training loss and validation score after each pass over the data (line: average of 3 runs; band: lowest to highest).](../figures/fig3_activation_training.png)
 
 All three models reach almost the same training loss. The difference is in the validation score:
 
@@ -80,17 +78,15 @@ All three models reach almost the same training loss. The difference is in the v
 
 ## 4. What the models rely on
 
-![Score drop when the ECG is shuffled (left) or only cut (right), for each piece length.](../figures/fig8_activation_sweep.png)
+![Score drop when the ECG is shuffled (left) or only cut (right), for each piece length.](../figures/fig4_activation_sweep.png)
 
-The three lines almost overlap, so all three models behave the same way:
+The three lines in Figure 2 almost overlap, so all three models behave the same way:
 
 - **Shuffling whole beats barely matters.** With 1-second pieces the score drops by only 0.003–0.005.
 - **Breaking beats apart matters a lot.** With 0.2-second pieces the score drops by 0.08–0.09, much more than
   the control (0.03–0.04).
 
 So every model looks at the **shape inside each heartbeat**, not at the rhythm between beats.
-
-![Score drop for each condition with 0.2-second pieces.](../figures/fig9_activation_class_drop.png)
 
 **ST/T changes (STTC) are hit hardest in every model** (a drop of 0.15–0.18). That makes sense: spotting an
 ST/T change means knowing what comes right after the main spike of the beat, which is exactly what shuffling
@@ -120,10 +116,5 @@ That gap is about the size of the run-to-run spread, so with only 3 runs we can'
 tested one model design at one recording rate (100 samples per second), with the default LeakyReLU setting
 (1%). A bigger LeakyReLU setting such as 10% could behave differently.
 
-**Where to find everything.**
-
-- Settings: `configs/leaky_relu.yaml`, `configs/tanh.yaml`
-- Results: `runs/resnet1d_leaky_relu/`, `runs/resnet1d_tanh/`
-- All numbers in one table: `figures/activation_metrics.csv`
-- Figures: made by `scripts/plot_results.py`
-- Cluster logs: `logs/train_leaky_relu_11184009.log`, `logs/train_tanh_11184010.log`
+**Files.** Settings: `configs/leaky_relu.yaml`, `configs/tanh.yaml`. Results: `runs/resnet1d_leaky_relu/`,
+`runs/resnet1d_tanh/`. All numbers: `figures/activation_metrics.csv`.
