@@ -1,24 +1,26 @@
 # Does the Order of Heartbeats Matter? Testing an ECG Model by Shuffling Its Input
 
+[![tests](https://github.com/dhairyab0069/ecg-diagnostic-classification-ptbxl/actions/workflows/tests.yml/badge.svg)](https://github.com/dhairyab0069/ecg-diagnostic-classification-ptbxl/actions/workflows/tests.yml)
+
 ![One test ECG cut into smaller and smaller pieces and shuffled, next to the drop in the model's score](figures/anim_shuffle.gif)
 
 *A real test ECG (lead II) cut into 5, 2, 1, 0.5 and 0.2-second pieces and shuffled. Right: how much the
 model's score drops at each piece length, over the whole test set. Shuffling whole beats barely matters;
 breaking beats apart does.*
 
-**Jump to:** [Summary](#summary) · [Results](#4-results) · [Activation comparison](#5-comparing-activation-functions-relu-leakyrelu-and-tanh) · [**Reproduce it**](#7-how-to-reproduce) · [Check the numbers in 1 minute](#71-check-the-reported-numbers-1-minute-no-data-or-gpu) · [Code layout](#75-where-things-are) · [Short report (PDF)](report/activation_report.pdf)
+**Jump to:** [Summary](#summary) · [Results](#4-results) · [Activation comparison](#5-comparing-activation-functions-relu-leakyrelu-and-tanh) · [**Reproduce it**](#7-how-to-reproduce) · [Check the numbers in 1 minute](#71-check-the-reported-numbers-1-minute-no-data-or-gpu) · [Tests](#74-tests) · [Code layout](#76-where-things-are) · [Short report (PDF)](report/activation_report.pdf)
 
 ## Summary
 
-We trained a neural network to read 12-lead ECGs from the PTB-XL dataset and flag five kinds of diagnosis:
+I trained a neural network to read 12-lead ECGs from the PTB-XL dataset and flag five kinds of diagnosis:
 normal, heart attack, ST/T changes, conduction problems and enlarged heart muscle. It scores
-**0.922 out of 1** on our main measure (AUROC, explained below), averaged over three training runs.
+**0.922 out of 1** on my main measure (AUROC, explained below), averaged over three training runs.
 
-We then asked a simple question: **does the model care about the order of things in the ECG, or only about
-the shape of each small piece?** To find out, we cut each test ECG into equal pieces, shuffled the pieces,
+I then asked a simple question: **does the model care about the order of things in the ECG, or only about
+the shape of each small piece?** To find out, I cut each test ECG into equal pieces, shuffled the pieces,
 and checked how much the score dropped.
 
-What we found:
+What I found:
 
 - **Shuffling whole heartbeats barely matters.** Cutting the ECG into 1-second pieces (about one beat each)
   and shuffling them lowers the score by only 0.004. A second model trained on shuffled ECGs from the start
@@ -43,23 +45,23 @@ So an ECG carries two kinds of information:
 1. **Shape**: what each beat looks like.
 2. **Rhythm**: how the beats are spaced and whether they are regular.
 
-A neural network trained on raw ECGs could learn from either one. Knowing which one it relies on helps us
-understand its mistakes and know which diagnoses we can trust it on.
+A neural network trained on raw ECGs could learn from either one. Knowing which one it relies on helps me
+understand its mistakes and know which diagnoses I can trust it on.
 
-Our test keeps the shape of each small piece but scrambles their order. If the score stays the same, the
+My test keeps the shape of each small piece but scrambles their order. If the score stays the same, the
 model was not using the order. There are two catches:
 
 1. **The cuts themselves.** Shuffling creates sudden jumps where pieces meet, which the model never saw
    during training. Part of any score drop could come from these jumps rather than from losing the order.
-   We check this with a **control** that makes the same cuts but keeps the pieces in order.
+   I check this with a **control** that makes the same cuts but keeps the pieces in order.
 2. **"Doesn't use" is not "doesn't need".** A model ignoring order doesn't prove the diagnosis doesn't need
-   it. We check this by training a second model on shuffled ECGs and seeing whether it does worse.
+   it. I check this by training a second model on shuffled ECGs and seeing whether it does worse.
 
 ## 2. Data
 
 **PTB-XL** [1] is a public dataset of 21,799 ECGs from 18,869 patients. Each is 10 seconds long with 12 leads
-(12 views of the heart from different electrode positions). We use the version recorded at 100 samples per
-second, so each lead is 1,000 numbers long. We keep the 21,388 ECGs that have at least one diagnosis label.
+(12 views of the heart from different electrode positions). I use the version recorded at 100 samples per
+second, so each lead is 1,000 numbers long. I keep the 21,388 ECGs that have at least one diagnosis label.
 One ECG can have several labels.
 
 | Label | Meaning | ECGs | Share |
@@ -70,7 +72,7 @@ One ECG can have several labels.
 | CD | Conduction disturbance (electrical signal travels abnormally) | 4,898 | 22.9% |
 | HYP | Hypertrophy (thickened heart muscle) | 2,649 | 12.4% |
 
-PTB-XL comes split into 10 groups, with each patient in only one group. We use groups 1–8 for training
+PTB-XL comes split into 10 groups, with each patient in only one group. I use groups 1–8 for training
 (17,084 ECGs), group 9 for choosing the best model during training (2,146) and group 10 for the final test
 (2,158). Each lead is rescaled to an average of 0 and a spread of 1, using numbers from the training groups
 only.
@@ -79,7 +81,7 @@ only.
 
 ### 3.1 Model
 
-We use a **1D ResNet** [3], a common type of convolutional neural network, with 4.08 million learned
+I use a **1D ResNet** [3], a common type of convolutional neural network, with 4.08 million learned
 parameters. It works in three parts:
 
 - **Start:** one wide filter (15 samples) scans the 12 leads and turns them into 64 feature channels, then
@@ -110,12 +112,12 @@ model is able to take in the full rhythm if it wants to.
 - **Length:** 30 passes over the training data, 128 ECGs per batch.
 - **Augmentation:** to make the model more robust, each training ECG is randomly made up to 20% louder or quieter,
   shifted in time, and given a little random noise.
-- **Picking the model:** after each pass we score the model on group 9 and keep the best version. The best
+- **Picking the model:** after each pass I score the model on group 9 and keep the best version. The best
   pass was between 14 and 22.
-- **Repeats:** every experiment is run three times with different random seeds (0, 1, 2). We report the
+- **Repeats:** every experiment is run three times with different random seeds (0, 1, 2). I report the
   average ± the spread (standard deviation).
 
-**How we score.** We use **AUROC** for each label. It asks: if you pick one ECG that has the label and one
+**How I score.** I use **AUROC** for each label. It asks: if you pick one ECG that has the label and one
 that doesn't, how often does the model give the first a higher score? 1.0 is perfect and 0.5 is a coin
 flip. The **macro** score is the average over the five labels. A **drop** is the normal test score minus
 the score after shuffling.
@@ -129,7 +131,7 @@ whole, and 0.2-second pieces cut through them.
 - **Shuffle:** the pieces are put in a random order. All 12 leads are shuffled the same way.
 - **Control:** the pieces stay in order, but each one is rotated by a random amount inside itself. This
   creates jumps at the cuts like the shuffle does, while keeping the overall order. The difference
-  *shuffle drop − control drop* tells us how much the order itself mattered.
+  *shuffle drop − control drop* tells me how much the order itself mattered.
 - **Shuffle-trained model:** same as the main model, but every training ECG is cut into 1-second pieces and
   shuffled. If it matches the main model on a label, that label doesn't need order above 1 second.
 
@@ -154,7 +156,7 @@ The random shuffles are fixed by a seed, so every model is tested on exactly the
 
 *Figure 1. Training loss and validation score after each pass (line: average of 3 runs; band: lowest to
 highest). The score levels off around pass 15–20, after which the main model gets slightly worse while its
-training loss keeps falling. That is why we keep the best version rather than the last one.*
+training loss keeps falling. That is why I keep the best version rather than the last one.*
 
 ![ROC curves](figures/fig2_roc_curves.png)
 
@@ -221,7 +223,7 @@ still loses 0.049 with 0.2-second pieces, which it never saw in training.
 
 ### 4.5 What the model actually decides
 
-AUROC only measures whether the model *ranks* ECGs correctly. To see its actual yes/no decisions, we set one
+AUROC only measures whether the model *ranks* ECGs correctly. To see its actual yes/no decisions, I set one
 cut-off per label (chosen on the validation group to balance missed and false alarms) and count how often it
 is right on normal and shuffled test ECGs, combining all 3 runs.
 
@@ -247,7 +249,7 @@ model toward "abnormal".
 
 ## 5. Comparing activation functions: ReLU, LeakyReLU and tanh
 
-We trained two more versions of the main model, identical except for the activation function, with the same
+I trained two more versions of the main model, identical except for the activation function, with the same
 settings, the same 3 seeds and the same shuffle tests.
 
 ### 5.1 Accuracy
@@ -334,7 +336,7 @@ in [`report/activation_report.md`](report/activation_report.md) ([PDF](report/ac
   so the control probably overstates the cost of the cuts. That is why *shuffle − control* is slightly
   negative at 1 and 0.5 seconds. The main conclusion doesn't depend on it, though: the plain shuffle drop at
   1 second is only 0.004.
-- **Only five labels.** We didn't test rhythm diagnoses like atrial fibrillation, where shuffling whole beats
+- **Only five labels.** I didn't test rhythm diagnoses like atrial fibrillation, where shuffling whole beats
   should matter a lot. Those would be the natural next check.
 - **Only three runs.** The runs agree closely (spread ≤ 0.005), but this doesn't measure how much the score
   would change with a different test set. Bootstrap resampling of the test ECGs would cover that.
@@ -376,7 +378,7 @@ cluster output for every run (see [logs/README.md](logs/README.md)).
 ```bash
 pip install -e ".[dev]"
 python scripts/download_data.py --rate 100              # downloads PTB-XL, about 0.5 GB
-pytest                                                  # quick sanity checks
+pytest                                                  # 60 tests, about 20 s on a laptop CPU (see 7.4)
 for seed in 0 1 2; do                                   # 3 runs per model, as reported
   python scripts/train.py --config configs/default.yaml --seed $seed           # main model (ReLU)
   python scripts/train.py --config configs/shuffle_trained.yaml --seed $seed   # shuffle-trained model
@@ -394,7 +396,7 @@ different LeakyReLU slope, change `model.negative_slope` in `configs/leaky_relu.
 
 ### 7.3 On a SLURM cluster
 
-We used Northeastern's Explorer cluster:
+I used Northeastern's Explorer cluster:
 
 ```bash
 sbatch scripts/slurm_setup.sh                                 # once: environment, data, tests
@@ -406,12 +408,27 @@ sbatch scripts/slurm_predict.sh                               # saved prediction
 sbatch scripts/slurm_predict.sh runs/resnet1d_leaky_relu runs/resnet1d_tanh   # same for the new models
 ```
 
-### 7.4 Hardware
+### 7.4 Tests
+
+`pytest` runs 60 tests on CPU in about 20 seconds, with no download needed (they use synthetic ECGs). They run
+automatically on every push (badge at the top).
+
+| File | What it checks |
+|---|---|
+| `tests/test_model.py` | Output shapes for any input length; the 4.08 M parameters and 12.9 s receptive field quoted above; every weight gets a gradient; eval mode is deterministic and records don't affect each other |
+| `tests/test_activations.py` | ReLU, LeakyReLU and tanh each replace all 17 activations; old configs still build ReLU; the LeakyReLU slope is applied |
+| `tests/test_transforms.py` | Shuffle and control keep every value and move all 12 leads together; shuffle keeps each piece intact and control keeps pieces in place; seeded probes are reproducible; augmentation stays in range and can be switched off |
+| `tests/test_data_and_metrics.py` | Splits follow the folds and never overlap; rescaling uses the training folds only; AUROC on perfect and inverted predictions; config overrides; each shipped config differs from the default only where intended |
+| `tests/test_pipeline.py` | A small model learns a learnable synthetic task; `train.py` → `predict.py` → `aggregate.py` run end to end; every committed `summary.json` matches its per-seed results |
+
+`pytest -m "not slow"` skips the end-to-end script run.
+
+### 7.5 Hardware
 
 One NVIDIA V100 GPU per job: about 2 seconds per pass, about 5 minutes for all 3 runs including
 the shuffle tests.
 
-### 7.5 Where things are
+### 7.6 Where things are
 
 ```
 configs/default.yaml           main model settings
@@ -434,7 +451,8 @@ figures/                       Figures 1-7, animations, extra_*.png supporting f
 report/                        short activation-function report (Markdown and PDF)
 logs/                          cluster logs from the reported runs (see logs/README.md)
 runs/                          results for every run, plus summary.json per model
-tests/                         sanity checks
+tests/                         60 tests (see 7.4)
+.github/workflows/tests.yml    runs the tests on every push
 ```
 
 ## References

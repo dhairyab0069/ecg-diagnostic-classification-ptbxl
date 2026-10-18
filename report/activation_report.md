@@ -6,7 +6,7 @@ date: "October 2026"
 
 ## In short
 
-We trained the same ECG model three times, changing only one part: the **activation function**. The three
+I trained the same ECG model three times, changing only one part: the **activation function**. The three
 choices were ReLU, LeakyReLU and tanh.
 
 - **ReLU and LeakyReLU work equally well.** Both score 0.922.
@@ -15,7 +15,7 @@ choices were ReLU, LeakyReLU and tanh.
 
 **Bottom line:** keep ReLU. LeakyReLU gives no benefit here, and tanh costs a little accuracy.
 
-## 1. What we tested
+## 1. What I tested
 
 **The task.** The model reads a 10-second, 12-lead ECG from the PTB-XL dataset and answers five yes/no
 questions: is the ECG normal (NORM), does it show a heart attack (MI), ST/T changes (STTC), a conduction
@@ -33,17 +33,17 @@ an activation function. An activation function decides what each part of the net
 Everything else stayed the same: data, training settings, 30 passes over the data, and 3 runs per model with
 different random seeds.
 
-**How we score.** We use **AUROC**. Take one ECG that has a condition and one that doesn't. AUROC is how often
+**How I score.** I use **AUROC**. Take one ECG that has a condition and one that doesn't. AUROC is how often
 the model gives the first one a higher score. 1.0 is perfect and 0.5 is guessing. "Macro" is the average over
 the five conditions.
 
-**The shuffle test.** To see *what* each model relies on, we cut each test ECG into equal pieces, shuffle the
+**The shuffle test.** To see *what* each model relies on, I cut each test ECG into equal pieces, shuffle the
 pieces and measure how much the score drops. A heartbeat lasts about 1 second, so:
 
 - shuffling **1-second pieces** mixes up the order of whole beats, and
 - shuffling **0.2-second pieces** breaks each beat apart.
 
-A "control" makes the same cuts but keeps the pieces in order. This tells us how much of the drop comes from
+A "control" makes the same cuts but keeps the pieces in order. This tells me how much of the drop comes from
 the cuts themselves rather than from losing the order.
 
 ## 2. Accuracy
@@ -78,7 +78,7 @@ All three models reach almost the same training loss. The difference is in the v
 
 - **tanh starts slower.** In the first 10 passes its validation score is clearly behind the other two.
 - **All three peak around pass 15–20** (best pass on average: ReLU 16.7, LeakyReLU 18.0, tanh 18.3) and then
-  get slightly worse as they start to memorize the training data. We keep the best version of each.
+  get slightly worse as they start to memorize the training data. I keep the best version of each.
 
 ## 4. What the models rely on
 
@@ -97,7 +97,7 @@ ST/T change means knowing what comes right after the main spike of the beat, whi
 destroys.
 
 LeakyReLU and tanh are slightly *more* affected by 0.2-second shuffling than ReLU (0.083 and 0.090 vs 0.076).
-That gap is about the size of the run-to-run spread, so with only 3 runs we can't be sure it is real.
+That gap is about the size of the run-to-run spread, so with only 3 runs I can't be sure it is real.
 
 | | ReLU | LeakyReLU | tanh |
 |---|---|---|---|
@@ -114,9 +114,9 @@ That gap is about the size of the run-to-run spread, so with only 3 runs we can'
 | Does LeakyReLU improve accuracy? | No, it ties with ReLU. |
 | Does tanh improve accuracy? | No, it is slightly worse (−0.003) and learns more slowly at first. |
 | Does the activation change what the model relies on? | No. All three use beat shape, not beat order. |
-| Which should we use? | ReLU: the simplest choice, and as accurate as either alternative. |
+| Which should I use? | ReLU: the simplest choice, and as accurate as either alternative. |
 
-**Limits.** Each model was trained only 3 times, so small differences (under about 0.005) may be noise. We
+**Limits.** Each model was trained only 3 times, so small differences (under about 0.005) may be noise. I
 tested one model design at one recording rate (100 samples per second), with the default LeakyReLU setting
 (1%). A bigger LeakyReLU setting such as 10% could behave differently.
 

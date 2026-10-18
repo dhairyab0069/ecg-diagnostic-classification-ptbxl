@@ -17,7 +17,13 @@ def load_config(path, overrides=()):
         *parents, leaf = key.split(".")
         for p in parents:
             node = node[p]
-        node[leaf] = yaml.safe_load(value)
+        value = yaml.safe_load(value)
+        if isinstance(value, str):  # PyYAML reads "1e-4" (no decimal point) as a string
+            try:
+                value = float(value)
+            except ValueError:
+                pass
+        node[leaf] = value
     return cfg
 
 
