@@ -6,6 +6,8 @@
 model's score drops at each piece length, over the whole test set. Shuffling whole beats barely matters;
 breaking beats apart does.*
 
+**Jump to:** [Summary](#summary) · [Results](#4-results) · [Activation comparison](#5-comparing-activation-functions-relu-leakyrelu-and-tanh) · [**Reproduce it**](#7-how-to-reproduce) · [Check the numbers in 1 minute](#71-check-the-reported-numbers-1-minute-no-data-or-gpu) · [Code layout](#75-where-things-are) · [Short report (PDF)](report/activation_report.pdf)
+
 ## Summary
 
 We trained a neural network to read 12-lead ECGs from the PTB-XL dataset and flag five kinds of diagnosis:
@@ -340,16 +342,47 @@ in [`report/activation_report.md`](report/activation_report.md) ([PDF](report/ac
   three activation functions). Higher
   rates keep more detail in each beat and could change the within-beat results.
 
-## 7. How to run it
+## 7. How to reproduce
+
+Three levels, from quickest to complete:
+
+| | What you get | Needs | Time |
+|---|---|---|---|
+| [7.1](#71-check-the-reported-numbers-1-minute-no-data-or-gpu) | Every table in this README, from the saved results | Python only | ~1 minute |
+| [7.2](#72-full-run-on-one-machine) | Everything retrained from scratch | PTB-XL download, a GPU recommended | ~30 minutes on one GPU |
+| [7.3](#73-on-a-slurm-cluster) | Same, as cluster jobs | A SLURM cluster | ~5 minutes per model |
+
+### 7.1 Check the reported numbers (1 minute, no data or GPU)
+
+The per-seed results of every run are committed in `runs/`, so the tables can be recomputed without
+downloading data or training anything:
+
+```bash
+git clone https://github.com/dhairyab0069/ecg-diagnostic-classification-ptbxl.git
+cd ecg-diagnostic-classification-ptbxl
+pip install numpy scikit-learn                     # all this step needs; no PyTorch
+export PYTHONPATH=src
+python scripts/aggregate.py runs/resnet1d_baseline          # Tables 1-3 (main model)
+python scripts/aggregate.py runs/resnet1d_shuffle_trained   # Tables 1 and 4
+python scripts/aggregate.py runs/resnet1d_leaky_relu        # Tables 5-7, LeakyReLU column
+python scripts/aggregate.py runs/resnet1d_tanh              # Tables 5-7, tanh column
+```
+
+`figures/activation_metrics.csv` has the activation comparison in one table, and `logs/` has the original
+cluster output for every run (see [logs/README.md](logs/README.md)).
+
+### 7.2 Full run on one machine
 
 ```bash
 pip install -e ".[dev]"
 python scripts/download_data.py --rate 100              # downloads PTB-XL, about 0.5 GB
 pytest                                                  # quick sanity checks
-python scripts/train.py --config configs/default.yaml --seed 0           # main model (ReLU)
-python scripts/train.py --config configs/shuffle_trained.yaml --seed 0   # shuffle-trained model
-python scripts/train.py --config configs/leaky_relu.yaml --seed 0        # LeakyReLU model
-python scripts/train.py --config configs/tanh.yaml --seed 0              # tanh model
+for seed in 0 1 2; do                                   # 3 runs per model, as reported
+  python scripts/train.py --config configs/default.yaml --seed $seed           # main model (ReLU)
+  python scripts/train.py --config configs/shuffle_trained.yaml --seed $seed   # shuffle-trained model
+  python scripts/train.py --config configs/leaky_relu.yaml --seed $seed        # LeakyReLU model
+  python scripts/train.py --config configs/tanh.yaml --seed $seed              # tanh model
+done
 python scripts/aggregate.py runs/resnet1d_baseline      # prints Tables 1-3, writes summary.json
 python scripts/predict.py runs/resnet1d_baseline        # saves predictions for Figures 2 and 4 (repeat per model)
 python scripts/plot_results.py --out figures            # makes Figures 1-7 and activation_metrics.csv
@@ -359,7 +392,9 @@ python scripts/make_gifs.py --out figures               # makes the two animatio
 You can change any setting from the command line, e.g. `--set train.epochs=10 model.dropout=0.5`. To try a
 different LeakyReLU slope, change `model.negative_slope` in `configs/leaky_relu.yaml`.
 
-On a SLURM cluster (we used Northeastern's Explorer):
+### 7.3 On a SLURM cluster
+
+We used Northeastern's Explorer cluster:
 
 ```bash
 sbatch scripts/slurm_setup.sh                                 # once: environment, data, tests
@@ -371,10 +406,12 @@ sbatch scripts/slurm_predict.sh                               # saved prediction
 sbatch scripts/slurm_predict.sh runs/resnet1d_leaky_relu runs/resnet1d_tanh   # same for the new models
 ```
 
-**Hardware.** One NVIDIA V100 GPU per job: about 2 seconds per pass, about 5 minutes for all 3 runs including
+### 7.4 Hardware
+
+One NVIDIA V100 GPU per job: about 2 seconds per pass, about 5 minutes for all 3 runs including
 the shuffle tests.
 
-**Where things are.**
+### 7.5 Where things are
 
 ```
 configs/default.yaml           main model settings
