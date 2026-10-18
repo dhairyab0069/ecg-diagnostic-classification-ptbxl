@@ -1,5 +1,11 @@
 # Does the Order of Heartbeats Matter? Testing an ECG Model by Shuffling Its Input
 
+![One test ECG cut into smaller and smaller pieces and shuffled, next to the drop in the model's score](figures/anim_shuffle.gif)
+
+*A real test ECG (lead II) cut into 5, 2, 1, 0.5 and 0.2-second pieces and shuffled. Right: how much the
+model's score drops at each piece length, over the whole test set. Shuffling whole beats barely matters;
+breaking beats apart does.*
+
 ## Summary
 
 We trained a neural network to read 12-lead ECGs from the PTB-XL dataset and flag five kinds of diagnosis:
@@ -259,6 +265,8 @@ settings, the same 3 seeds and the same shuffle tests.
 
 *Figure 5. Test AUROC for each label and activation function (dot: average of 3 runs; line: ± spread).*
 
+![Training timelapse for the three activation functions](figures/anim_training.gif)
+
 ![Activation training curves](figures/fig6_activation_training.png)
 
 *Figure 6. Training loss and validation score after each pass, for each activation function (line: average
@@ -345,6 +353,7 @@ python scripts/train.py --config configs/tanh.yaml --seed 0              # tanh 
 python scripts/aggregate.py runs/resnet1d_baseline      # prints Tables 1-3, writes summary.json
 python scripts/predict.py runs/resnet1d_baseline        # saves predictions for Figures 2 and 4 (repeat per model)
 python scripts/plot_results.py --out figures            # makes Figures 1-7 and activation_metrics.csv
+python scripts/make_gifs.py --out figures               # makes the two animations
 ```
 
 You can change any setting from the command line, e.g. `--set train.epochs=10 model.dropout=0.5`. To try a
@@ -381,9 +390,10 @@ scripts/train.py               train, pick best version, test, run shuffle tests
 scripts/aggregate.py           average and spread across runs, summary.json
 scripts/predict.py             saves per-ECG predictions
 scripts/plot_results.py        makes the figures
+scripts/make_gifs.py           makes the animations (anim_shuffle.gif, anim_training.gif)
 scripts/download_data.py       downloads PTB-XL
 scripts/slurm_*.sh             cluster job scripts
-figures/                       Figures 1-7, extra_*.png supporting figures, activation_metrics.csv
+figures/                       Figures 1-7, animations, extra_*.png supporting figures, activation_metrics.csv
 report/                        short activation-function report (Markdown and PDF)
 logs/                          cluster logs from the reported runs (see logs/README.md)
 runs/                          results for every run, plus summary.json per model
