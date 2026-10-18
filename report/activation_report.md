@@ -68,7 +68,7 @@ activation, which mostly prevents that problem. So there is little for LeakyReLU
 
 ## 3. Training
 
-![Training loss and validation score after each pass over the data (line: average of 3 runs; band: lowest to highest).](../figures/fig3_activation_training.png)
+![Training loss and validation score after each pass over the data (line: average of 3 runs; band: lowest to highest).](../figures/fig4_activation_training.png)
 
 All three models reach almost the same training loss. The difference is in the validation score:
 
@@ -78,7 +78,7 @@ All three models reach almost the same training loss. The difference is in the v
 
 ## 4. What the models rely on
 
-![Score drop when the ECG is shuffled (left) or only cut (right), for each piece length.](../figures/fig4_activation_sweep.png)
+![Score drop when the ECG is shuffled (left) or only cut (right), for each piece length.](../figures/fig5_activation_sweep.png)
 
 The three lines in Figure 2 almost overlap, so all three models behave the same way:
 

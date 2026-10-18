@@ -4,7 +4,7 @@ Example:
     python scripts/predict.py runs/resnet1d_baseline        # once per run, for the confusion matrices
     python scripts/plot_results.py --out figures
 
-Figures 3-4 and activation_metrics.csv compare the ReLU, LeakyReLU and tanh models and are
+Figures 4-5 and activation_metrics.csv compare the ReLU, LeakyReLU and tanh models and are
 made only when all three runs exist.
 """
 import argparse
@@ -97,9 +97,28 @@ def plot_sweep(results, out):
     axes[0].legend(frameon=False, loc="upper left")
     fig.suptitle("Order matters only below one heartbeat", x=0.02, ha="left", fontweight="bold", fontsize=12)
     fig.tight_layout()
-    save(fig, out, "fig1_segment_sweep.png")
+    save(fig, out, "fig2_segment_sweep.png")
 
 
+
+
+def plot_training_curves(out):
+    """Train loss and validation macro AUROC per epoch, mean and range over seeds."""
+    fig, axes = plt.subplots(1, 2, figsize=(9, 3.4))
+    for (model, run_dir), color in zip(RUNS.items(), [BLUE, ORANGE]):
+        hs = load_json(run_dir, "history.json")
+        epochs = [h["epoch"] for h in hs[0]]
+        for ax, key in zip(axes, ["train_loss", "val_macro_auroc"]):
+            v = np.array([[h[key] for h in run] for run in hs])
+            ax.fill_between(epochs, v.min(0), v.max(0), color=color, alpha=0.15, linewidth=0)
+            ax.plot(epochs, v.mean(0), color=color, linewidth=2, label=model)
+    for ax, title in zip(axes, ["Training loss", "Validation macro AUROC"]):
+        ax.set_title(title)
+        ax.set_xlabel("Epoch")
+        ax.grid(axis="y", color=GRID, linewidth=0.8)
+    axes[1].legend(frameon=False, loc="lower right")
+    fig.tight_layout()
+    save(fig, out, "fig1_training_curves.png")
 
 
 def load_preds(run_dir):
@@ -149,7 +168,7 @@ def plot_label_confusion(preds, out):
     fig.suptitle("Baseline label confusion: share of records with each true label predicted as each label "
                  "(3 seeds pooled)", x=0.01, ha="left", fontweight="bold", fontsize=12)
     fig.tight_layout()
-    save(fig, out, "fig2_label_confusion.png")
+    save(fig, out, "fig3_label_confusion.png")
 
 
 
@@ -187,7 +206,7 @@ def plot_activation_sweep(results, out):
     fig.suptitle("All three activations rely on order only within a heartbeat", x=0.02, ha="left",
                  fontweight="bold", fontsize=12)
     fig.tight_layout()
-    save(fig, out, "fig4_activation_sweep.png")
+    save(fig, out, "fig5_activation_sweep.png")
 
 
 
@@ -209,7 +228,7 @@ def plot_activation_training(out):
     axes[1].set_ylim(0.85, None)
     axes[1].legend(frameon=False, loc="lower right")
     fig.tight_layout()
-    save(fig, out, "fig3_activation_training.png")
+    save(fig, out, "fig4_activation_training.png")
 
 
 def write_activation_metrics(results, out):
@@ -240,6 +259,7 @@ def main():
     os.makedirs(args.out, exist_ok=True)
 
     results = {model: load_json(d, "results.json") for model, d in RUNS.items()}
+    plot_training_curves(args.out)
     plot_sweep(results, args.out)
     if all(glob.glob(os.path.join(d, "seed*", "results.json")) for d in ACT_RUNS.values()):
         act = {model: load_json(d, "results.json") for model, d in ACT_RUNS.items()}
