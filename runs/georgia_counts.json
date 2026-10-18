@@ -1,0 +1,18 @@
+{
+  "records": 10334,
+  "missing_on_server": 10,
+  "eligible": 8093,
+  "sampled": 3000,
+  "seed": 0,
+  "skipped": {
+    "no diagnostic label": 2189,
+    "not 10 s long": 52
+  },
+  "positives": {
+    "NORM": 619,
+    "MI": 2,
+    "STTC": 1528,
+    "CD": 820,
+    "HYP": 834
+  }
+}

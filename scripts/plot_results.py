@@ -6,7 +6,8 @@ Example:
 
 Figures 5-7, the extra_activation figure and activation_metrics.csv compare the ReLU, LeakyReLU
 and tanh models and are made only when all three runs exist. Figure 2 (ROC curves) needs preds.npz
-for each of the three. extra_*.png are supporting figures that the README does not show.
+for each of the three. extra_*.png are supporting figures that the README does not show. Figure 8 needs
+external_georgia_summary.json from scripts/external_eval.py.
 """
 import argparse
 import glob
@@ -368,6 +369,43 @@ def plot_roc_curves(preds, out):
     save(fig, out, "fig2_roc_curves.png")
 
 
+def plot_external(out):
+    """PTB-XL test vs Georgia AUROC per class (left) and Georgia probe drops (right), main model."""
+    summ = json.load(open(os.path.join(RUNS["Baseline"], "external_georgia_summary.json")))
+    rows = summ["classes"] + ["macro"]
+    fig, axes = plt.subplots(1, 2, figsize=(11, 3.8), gridspec_kw={"width_ratios": [1.4, 1]})
+    ax = axes[0]
+    for off, (key, label, color) in zip([-0.12, 0.12], [("ptbxl_test", "PTB-XL test", BLUE), ("clean", "Georgia", ORANGE)]):
+        x = np.arange(len(rows)) + off
+        mean, std = [summ[key][c]["mean"] for c in rows], [summ[key][c]["std"] for c in rows]
+        ax.errorbar(x, mean, yerr=std, fmt="none", ecolor=color, elinewidth=2)
+        ax.plot(x, mean, "o", color=color, markersize=8, markeredgecolor=SURFACE, markeredgewidth=1.5, label=label)
+    ax.axvline(len(rows) - 1.5, color=GRID, linewidth=1)
+    ax.set_xticks(range(len(rows)), [r if r != "macro" else "Macro" for r in rows])
+    ax.tick_params(axis="x", length=0)
+    ax.grid(axis="y", color=GRID, linewidth=0.8)
+    ax.set_ylabel("Test AUROC")
+    ax.legend(frameon=False, loc="lower left")
+    ax.set_title("Same model, two datasets")
+
+    ax = axes[1]
+    lengths = ["1 s", "0.2 s"]
+    for kind, label, color in [("shuffle", "Shuffle", BLUE), ("roll", "Roll control", ORANGE)]:
+        drop = [summ["clean"]["macro"]["mean"] - summ[f"{kind}_{k}"]["macro"]["mean"] for k in ("10", "50")]
+        ax.plot(lengths, drop, color=color, linewidth=2, marker="o", markersize=7,
+                markeredgecolor=SURFACE, markeredgewidth=1.5, label=label)
+    ax.axhline(0, color=INK_2, linewidth=0.8)
+    ax.grid(axis="y", color=GRID, linewidth=0.8)
+    ax.set_xlabel("Segment length")
+    ax.set_ylabel("Macro AUROC drop on Georgia")
+    ax.legend(frameon=False, loc="upper left")
+    ax.set_title("Shuffle test on Georgia")
+    fig.suptitle(f"External test on {summ['records']:,} Georgia ECGs (main model, mean of 3 seeds)", x=0.01,
+                 ha="left", fontweight="bold", fontsize=12)
+    fig.tight_layout()
+    save(fig, out, "fig8_external_georgia.png")
+
+
 def write_activation_metrics(results, out):
     """One row per activation and class: test AUROC, drops at 1 s and 0.2 s, best epoch."""
     header = ["activation", "label", "test_auroc_mean", "test_auroc_std",
@@ -406,6 +444,8 @@ def main():
         plot_activation_class_drop(act, args.out)
         plot_activation_training(args.out)
         write_activation_metrics(act, args.out)
+    if os.path.exists(os.path.join(RUNS["Baseline"], "external_georgia_summary.json")):
+        plot_external(args.out)
     act_preds = {model: load_preds(d) for model, d in ACT_RUNS.items()}
     if all(act_preds.values()):
         plot_roc_curves(act_preds, args.out)

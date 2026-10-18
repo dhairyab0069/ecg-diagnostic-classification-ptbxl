@@ -11,6 +11,8 @@ resolved config in `config.yaml`, and the 3-seed means in `runs/<model>/summary.
 | `train_shuffle_trained_11138452.log` | `scripts/slurm_train.sh configs/shuffle_trained.yaml` | Shuffle-trained model, same layout |
 | `train_leaky_relu_11184009.log` | `scripts/slurm_train.sh configs/leaky_relu.yaml` | LeakyReLU model, same layout |
 | `train_tanh_11184010.log` | `scripts/slurm_train.sh configs/tanh.yaml` | tanh model, same layout |
+| `download_georgia_11190117.log` | `scripts/download_external.py` (Slurm, `short` partition) | Georgia headers, the 3,000-record sample, label counts |
+| `external_georgia_11190118.log` | `scripts/slurm_external.sh` | Every model scored on Georgia, clean and shuffled (Section 6) |
 | `predict_11139237.log` | `scripts/slurm_predict.sh` | Saving per-record predictions for the confusion matrices |
 
 Each training log ends with the 3-seed tables printed by `scripts/aggregate.py`. Hardware: one NVIDIA V100-SXM2

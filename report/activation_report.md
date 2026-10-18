@@ -107,7 +107,22 @@ That gap is about the size of the run-to-run spread, so with only 3 runs I can't
 | Effect of order inside a beat (shuffle − control) | 0.047 | 0.052 | 0.052 |
 | STTC drop, 0.2-second shuffle | 0.153 | 0.179 | 0.179 |
 
-## 5. Conclusion
+## 5. Does it hold on a second dataset?
+
+I also scored the saved models, without retraining, on 3,000 ECGs from the Georgia database (USA), which
+comes from a different hospital, different equipment and different doctors. Heart attacks couldn't be
+tested there (too few cases), so the scores below cover the other four conditions.
+
+| | ReLU | LeakyReLU | tanh |
+|---|---|---|---|
+| PTB-XL test (4 conditions) | 0.922 | 0.922 | 0.920 |
+| Georgia (4 conditions) | 0.835 | 0.836 | 0.832 |
+
+All three models lose about 0.09 on the new data, and their order stays the same: ReLU and LeakyReLU tie,
+tanh is a little lower. On Georgia too, shuffling whole beats barely matters while breaking beats apart
+does.
+
+## 6. Conclusion
 
 | Question | Answer |
 |---|---|

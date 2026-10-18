@@ -1,0 +1,34 @@
+Downloading 10344 .hea files...
+  1000/10344
+  2000/10344
+  3000/10344
+  4000/10344
+  5000/10344
+  6000/10344
+  7000/10344
+  8000/10344
+  9000/10344
+  10000/10344
+  10 not on the server, skipped: ['g1/E01000', 'g2/E02000', 'g3/E03000', 'g4/E04000', 'g5/E05000'] ...
+Downloading 3000 .mat files...
+  1000/3000
+  2000/3000
+  3000/3000
+{
+  "records": 10334,
+  "missing_on_server": 10,
+  "eligible": 8093,
+  "sampled": 3000,
+  "seed": 0,
+  "skipped": {
+    "no diagnostic label": 2189,
+    "not 10 s long": 52
+  },
+  "positives": {
+    "NORM": 619,
+    "MI": 2,
+    "STTC": 1528,
+    "CD": 820,
+    "HYP": 834
+  }
+}

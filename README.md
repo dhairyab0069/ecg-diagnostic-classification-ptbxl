@@ -8,7 +8,7 @@
 model's score drops at each piece length, over the whole test set. Shuffling whole beats barely matters;
 breaking beats apart does.*
 
-**Jump to:** [Summary](#summary) · [Results](#4-results) · [Activation comparison](#5-comparing-activation-functions-relu-leakyrelu-and-tanh) · [**Reproduce it**](#7-how-to-reproduce) · [Check the numbers in 1 minute](#71-check-the-reported-numbers-1-minute-no-data-or-gpu) · [Tests](#74-tests) · [Code layout](#76-where-things-are) · [Short report (PDF)](report/activation_report.pdf)
+**Jump to:** [Summary](#summary) · [Results](#4-results) · [Activation comparison](#5-comparing-activation-functions-relu-leakyrelu-and-tanh) · [Second dataset](#6-testing-on-a-second-dataset) · [**Reproduce it**](#8-how-to-reproduce) · [Check the numbers in 1 minute](#81-check-the-reported-numbers-1-minute-no-data-or-gpu) · [Tests](#84-tests) · [Code layout](#86-where-things-are) · [Short report (PDF)](report/activation_report.pdf)
 
 ## Summary
 
@@ -33,6 +33,9 @@ What I found:
 - **Changing the activation function makes little difference.** Swapping ReLU for LeakyReLU gives the same
   score (0.922), and tanh is slightly lower (0.919). All three versions react to shuffling the same way
   (Section 5).
+- **On a second dataset from another country, the score drops to 0.835.** Tested without retraining on
+  3,000 ECGs from the Georgia database (USA), the model loses about 0.09, mostly on ST/T changes and
+  enlarged heart muscle. The shape-not-rhythm finding holds there too (Section 6).
 
 ## 1. Background
 
@@ -330,7 +333,78 @@ costs a little accuracy.
 All the numbers behind this section are in `figures/activation_metrics.csv`. A short stand-alone write-up is
 in [`report/activation_report.md`](report/activation_report.md) ([PDF](report/activation_report.pdf)).
 
-## 6. Limitations
+## 6. Testing on a second dataset
+
+PTB-XL's validation and test groups come from the same hospital, devices and doctors as its training
+groups, so a good test score there doesn't show how the model does elsewhere. To check, I scored the saved
+models, **without any retraining**, on the **Georgia 12-lead ECG database** (Emory University, Atlanta,
+USA), which is part of the PhysioNet/CinC Challenge 2021 collection. It was recorded on different equipment,
+at 500 samples per second, and labelled by different doctors.
+
+**How the data was prepared** (`src/ecg/external.py`, `scripts/download_external.py`):
+
+- Georgia labels ECGs with SNOMED medical codes. I mapped each code to the PTB-XL statement it matches and
+  used that statement's label, so records are labelled by the same rules as PTB-XL. Codes that PTB-XL treats
+  only as shape or rhythm notes (like "T-wave abnormal" or atrial fibrillation) give no label.
+- Georgia has no "normal ECG" code, so **NORM** means normal sinus rhythm with no other finding.
+- I kept 10-second recordings with at least one label (8,093 of 10,334), resampled them from 500 to 100
+  samples per second, and rescaled them with each model's own PTB-XL training numbers.
+- physionet.org serves these files slowly (about 100 KB/s), so I used a fixed random sample of **3,000**
+  of the 8,093 records (seed 0). That is still more than PTB-XL's 2,158 test ECGs.
+- **MI is left out:** only 7 Georgia records (2 in the sample) are labelled as heart attacks, too few to
+  score. Georgia's sample has 619 NORM, 1,528 STTC, 820 CD and 834 HYP records.
+
+| Label | PTB-XL test | Georgia | Drop |
+|---|---|---|---|
+| NORM | 0.944 ± 0.001 | 0.890 ± 0.003 | 0.054 |
+| STTC | 0.932 ± 0.002 | 0.807 ± 0.007 | 0.125 |
+| CD | 0.916 ± 0.003 | 0.878 ± 0.006 | 0.039 |
+| HYP | 0.896 ± 0.003 | 0.767 ± 0.003 | 0.129 |
+| **Macro** | 0.922 ± 0.001 | 0.835 ± 0.004 | 0.087 |
+
+*Table 8. Main model, test AUROC on PTB-XL and on Georgia, average ± spread over 3 runs. The PTB-XL macro
+here is over the same four labels.*
+
+| Model | PTB-XL test (4 labels) | Georgia |
+|---|---|---|
+| ReLU (main) | 0.922 ± 0.001 | 0.835 ± 0.004 |
+| Shuffle-trained | 0.922 ± 0.001 | 0.838 ± 0.006 |
+| LeakyReLU | 0.922 ± 0.001 | 0.836 ± 0.003 |
+| tanh | 0.920 ± 0.002 | 0.832 ± 0.000 |
+
+*Table 9. Macro AUROC for every model on both datasets.*
+
+![External test](figures/fig8_external_georgia.png)
+
+*Figure 8. Left: the same model on PTB-XL and Georgia. Right: the shuffle test repeated on Georgia.*
+
+| Label | Shuffle, 1 s | Control, 1 s | Shuffle, 0.2 s | Control, 0.2 s |
+|---|---|---|---|---|
+| NORM | -0.001 | 0.006 | 0.061 | 0.030 |
+| STTC | 0.014 | 0.032 | 0.155 | 0.082 |
+| CD | 0.002 | 0.007 | 0.051 | 0.060 |
+| HYP | -0.007 | -0.007 | 0.004 | 0.002 |
+| **Macro** | 0.002 | 0.010 | 0.068 | 0.043 |
+
+*Table 10. Drop in AUROC on Georgia for the main model when its ECGs are shuffled or cut, average over 3 runs.*
+
+What this shows:
+
+- **The score drops from 0.922 to 0.835 on new data.** This is the more realistic number for ECGs from
+  another hospital. Conduction problems transfer best (0.878); ST/T changes (0.807) and enlarged heart
+  muscle (0.767) transfer worst. Part of the gap is likely the labels, not just the model: Georgia's doctors
+  used different codes (for example, "ST interval abnormal" and "left atrial enlargement" are common there),
+  and my code mapping is close but not exact. Separating label differences from real model weakness would
+  need more work.
+- **The main finding holds.** On Georgia too, shuffling whole beats (1 s) barely matters (0.002, less than
+  the control's 0.010), while breaking beats apart (0.2 s) costs 0.068 against 0.043 for the control. ST/T
+  changes are again hit hardest (0.155, almost the same as on PTB-XL's 0.153).
+- **One difference:** enlarged heart muscle barely reacts to 0.2-second shuffling on Georgia (0.004, against
+  0.055 on PTB-XL). One possible reason is that hypertrophy is judged mostly by how large the waves are,
+  which shuffling doesn't change, but I haven't tested that.
+- **The activation comparison holds:** LeakyReLU and ReLU are within 0.001 (0.836 and 0.835) and tanh is slightly lower (0.832).
+
+## 7. Limitations
 
 - **The control isn't perfect.** Rotating a piece adds an extra jump inside it and moves the waveform around,
   so the control probably overstates the cost of the cuts. That is why *shuffle − control* is slightly
@@ -341,20 +415,22 @@ in [`report/activation_report.md`](report/activation_report.md) ([PDF](report/ac
 - **Only three runs.** The runs agree closely (spread ≤ 0.005), but this doesn't measure how much the score
   would change with a different test set. Bootstrap resampling of the test ECGs would cover that.
 - **One model design, one sampling rate.** Results are for one 1D ResNet at 100 samples per second (with
-  three activation functions). Higher
-  rates keep more detail in each beat and could change the within-beat results.
+  three activation functions). Higher rates keep more detail in each beat and could change the within-beat
+  results.
+- **One external dataset, approximately mapped.** The outside test uses one database, a 3,000-record sample,
+  and a hand-made mapping from SNOMED codes to PTB-XL labels. Heart attacks (MI) couldn't be tested there.
 
-## 7. How to reproduce
+## 8. How to reproduce
 
 Three levels, from quickest to complete:
 
 | | What you get | Needs | Time |
 |---|---|---|---|
-| [7.1](#71-check-the-reported-numbers-1-minute-no-data-or-gpu) | Every table in this README, from the saved results | Python only | ~1 minute |
-| [7.2](#72-full-run-on-one-machine) | Everything retrained from scratch | PTB-XL download, a GPU recommended | ~30 minutes on one GPU |
-| [7.3](#73-on-a-slurm-cluster) | Same, as cluster jobs | A SLURM cluster | ~5 minutes per model |
+| [8.1](#81-check-the-reported-numbers-1-minute-no-data-or-gpu) | Every table in this README, from the saved results | Python only | ~1 minute |
+| [8.2](#82-full-run-on-one-machine) | Everything retrained from scratch | PTB-XL download, a GPU recommended | ~30 minutes on one GPU |
+| [8.3](#83-on-a-slurm-cluster) | Same, as cluster jobs | A SLURM cluster | ~5 minutes per model |
 
-### 7.1 Check the reported numbers (1 minute, no data or GPU)
+### 8.1 Check the reported numbers (1 minute, no data or GPU)
 
 The per-seed results of every run are committed in `runs/`, so the tables can be recomputed without
 downloading data or training anything:
@@ -370,15 +446,16 @@ python scripts/aggregate.py runs/resnet1d_leaky_relu        # Tables 5-7, LeakyR
 python scripts/aggregate.py runs/resnet1d_tanh              # Tables 5-7, tanh column
 ```
 
-`figures/activation_metrics.csv` has the activation comparison in one table, and `logs/` has the original
+The second-dataset numbers (Section 6) are in `runs/<model>/external_georgia_summary.json`, with per-seed
+files next to the other results. `figures/activation_metrics.csv` has the activation comparison in one table, and `logs/` has the original
 cluster output for every run (see [logs/README.md](logs/README.md)).
 
-### 7.2 Full run on one machine
+### 8.2 Full run on one machine
 
 ```bash
 pip install -e ".[dev]"
 python scripts/download_data.py --rate 100              # downloads PTB-XL, about 0.5 GB
-pytest                                                  # 60 tests, about 20 s on a laptop CPU (see 7.4)
+pytest                                                  # 70 tests, about 25 s on a laptop CPU (see 8.4)
 for seed in 0 1 2; do                                   # 3 runs per model, as reported
   python scripts/train.py --config configs/default.yaml --seed $seed           # main model (ReLU)
   python scripts/train.py --config configs/shuffle_trained.yaml --seed $seed   # shuffle-trained model
@@ -387,14 +464,16 @@ for seed in 0 1 2; do                                   # 3 runs per model, as r
 done
 python scripts/aggregate.py runs/resnet1d_baseline      # prints Tables 1-3, writes summary.json
 python scripts/predict.py runs/resnet1d_baseline        # saves predictions for Figures 2 and 4 (repeat per model)
-python scripts/plot_results.py --out figures            # makes Figures 1-7 and activation_metrics.csv
+python scripts/plot_results.py --out figures            # makes Figures 1-8 and activation_metrics.csv
 python scripts/make_gifs.py --out figures               # makes the two animations
+python scripts/download_external.py                     # Georgia: all headers + a 3,000-record sample (slow server)
+python scripts/external_eval.py runs/resnet1d_baseline  # Section 6 (repeat per model)
 ```
 
 You can change any setting from the command line, e.g. `--set train.epochs=10 model.dropout=0.5`. To try a
 different LeakyReLU slope, change `model.negative_slope` in `configs/leaky_relu.yaml`.
 
-### 7.3 On a SLURM cluster
+### 8.3 On a SLURM cluster
 
 I used Northeastern's Explorer cluster:
 
@@ -406,11 +485,12 @@ sbatch scripts/slurm_train.sh configs/leaky_relu.yaml         # LeakyReLU model
 sbatch scripts/slurm_train.sh configs/tanh.yaml               # tanh model
 sbatch scripts/slurm_predict.sh                               # saved predictions (baseline, shuffle-trained)
 sbatch scripts/slurm_predict.sh runs/resnet1d_leaky_relu runs/resnet1d_tanh   # same for the new models
+sbatch scripts/slurm_external.sh                              # download Georgia, score every model on it
 ```
 
-### 7.4 Tests
+### 8.4 Tests
 
-`pytest` runs 60 tests on CPU in about 20 seconds, with no download needed (they use synthetic ECGs). They run
+`pytest` runs 70 tests on CPU in about 25 seconds, with no download needed (they use synthetic ECGs). They run
 automatically on every push (badge at the top).
 
 | File | What it checks |
@@ -419,16 +499,17 @@ automatically on every push (badge at the top).
 | `tests/test_activations.py` | ReLU, LeakyReLU and tanh each replace all 17 activations; old configs still build ReLU; the LeakyReLU slope is applied |
 | `tests/test_transforms.py` | Shuffle and control keep every value and move all 12 leads together; shuffle keeps each piece intact and control keeps pieces in place; seeded probes are reproducible; augmentation stays in range and can be switched off |
 | `tests/test_data_and_metrics.py` | Splits follow the folds and never overlap; rescaling uses the training folds only; AUROC on perfect and inverted predictions; config overrides; each shipped config differs from the default only where intended |
+| `tests/test_external.py` | Georgia headers parse; SNOMED codes map to the five labels by the PTB-XL rules; signals convert to mV and resample from 500 to 100 Hz correctly |
 | `tests/test_pipeline.py` | A small model learns a learnable synthetic task; `train.py` → `predict.py` → `aggregate.py` run end to end; every committed `summary.json` matches its per-seed results |
 
 `pytest -m "not slow"` skips the end-to-end script run.
 
-### 7.5 Hardware
+### 8.5 Hardware
 
 One NVIDIA V100 GPU per job: about 2 seconds per pass, about 5 minutes for all 3 runs including
 the shuffle tests.
 
-### 7.6 Where things are
+### 8.6 Where things are
 
 ```
 configs/default.yaml           main model settings
@@ -440,18 +521,21 @@ src/ecg/model.py               the 1D ResNet (activation is set in the config)
 src/ecg/transforms.py          augmentation, shuffle test, control
 src/ecg/engine.py              training and evaluation loops
 src/ecg/metrics.py             AUROC
+src/ecg/external.py            Georgia (second dataset): header parsing, label mapping, resampling
 scripts/train.py               train, pick best version, test, run shuffle tests
 scripts/aggregate.py           average and spread across runs, summary.json
 scripts/predict.py             saves per-ECG predictions
 scripts/plot_results.py        makes the figures
 scripts/make_gifs.py           makes the animations (anim_shuffle.gif, anim_training.gif)
 scripts/download_data.py       downloads PTB-XL
+scripts/download_external.py   downloads Georgia and builds its 100 Hz cache
+scripts/external_eval.py       scores saved models on Georgia, clean and shuffled
 scripts/slurm_*.sh             cluster job scripts
-figures/                       Figures 1-7, animations, extra_*.png supporting figures, activation_metrics.csv
+figures/                       Figures 1-8, animations, extra_*.png supporting figures, activation_metrics.csv
 report/                        short activation-function report (Markdown and PDF)
 logs/                          cluster logs from the reported runs (see logs/README.md)
 runs/                          results for every run, plus summary.json per model
-tests/                         60 tests (see 7.4)
+tests/                         70 tests (see 8.4)
 .github/workflows/tests.yml    runs the tests on every push
 ```
 
