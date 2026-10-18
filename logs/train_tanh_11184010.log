@@ -1,0 +1,265 @@
+train 17084  val 2146  test 2158  device cuda
+epoch 01  loss 0.3964  val AUROC 0.8718  best 0.8718  (6s)
+epoch 02  loss 0.3286  val AUROC 0.8688  best 0.8718  (3s)
+epoch 03  loss 0.3159  val AUROC 0.8914  best 0.8914  (4s)
+epoch 04  loss 0.3082  val AUROC 0.8829  best 0.8914  (4s)
+epoch 05  loss 0.3026  val AUROC 0.8632  best 0.8914  (4s)
+epoch 06  loss 0.2991  val AUROC 0.8979  best 0.8979  (4s)
+epoch 07  loss 0.2927  val AUROC 0.8975  best 0.8979  (4s)
+epoch 08  loss 0.2857  val AUROC 0.8963  best 0.8979  (4s)
+epoch 09  loss 0.2792  val AUROC 0.9048  best 0.9048  (4s)
+epoch 10  loss 0.2691  val AUROC 0.9111  best 0.9111  (4s)
+epoch 11  loss 0.2647  val AUROC 0.9099  best 0.9111  (4s)
+epoch 12  loss 0.2622  val AUROC 0.9138  best 0.9138  (4s)
+epoch 13  loss 0.2557  val AUROC 0.9192  best 0.9192  (4s)
+epoch 14  loss 0.2504  val AUROC 0.9111  best 0.9192  (4s)
+epoch 15  loss 0.2457  val AUROC 0.9211  best 0.9211  (4s)
+epoch 16  loss 0.2399  val AUROC 0.9171  best 0.9211  (4s)
+epoch 17  loss 0.2327  val AUROC 0.9194  best 0.9211  (4s)
+epoch 18  loss 0.2281  val AUROC 0.9201  best 0.9211  (4s)
+epoch 19  loss 0.2216  val AUROC 0.9202  best 0.9211  (4s)
+epoch 20  loss 0.2144  val AUROC 0.9241  best 0.9241  (4s)
+epoch 21  loss 0.2088  val AUROC 0.9182  best 0.9241  (4s)
+epoch 22  loss 0.2009  val AUROC 0.9218  best 0.9241  (4s)
+epoch 23  loss 0.1924  val AUROC 0.9208  best 0.9241  (4s)
+epoch 24  loss 0.1827  val AUROC 0.9190  best 0.9241  (4s)
+epoch 25  loss 0.1692  val AUROC 0.9211  best 0.9241  (4s)
+epoch 26  loss 0.1617  val AUROC 0.9192  best 0.9241  (4s)
+epoch 27  loss 0.1495  val AUROC 0.9160  best 0.9241  (4s)
+epoch 28  loss 0.1402  val AUROC 0.9151  best 0.9241  (4s)
+epoch 29  loss 0.1342  val AUROC 0.9148  best 0.9241  (4s)
+epoch 30  loss 0.1307  val AUROC 0.9142  best 0.9241  (4s)
+
+TEST AUROC
+  macro 0.9218
+  NORM  0.9473
+  MI    0.9200
+  STTC  0.9329
+  CD    0.9138
+  HYP   0.8950
+
+2 SEGMENTS
+  macro 0.9218   shuffle 0.9211 (drop +0.0007)   roll 0.9202 (drop +0.0015)
+  NORM  0.9473   shuffle 0.9459 (drop +0.0014)   roll 0.9430 (drop +0.0043)
+  MI    0.9200   shuffle 0.9193 (drop +0.0007)   roll 0.9166 (drop +0.0035)
+  STTC  0.9329   shuffle 0.9318 (drop +0.0010)   roll 0.9333 (drop -0.0005)
+  CD    0.9138   shuffle 0.9154 (drop -0.0016)   roll 0.9140 (drop -0.0002)
+  HYP   0.8950   shuffle 0.8932 (drop +0.0018)   roll 0.8943 (drop +0.0007)
+
+5 SEGMENTS
+  macro 0.9218   shuffle 0.9209 (drop +0.0009)   roll 0.9178 (drop +0.0040)
+  NORM  0.9473   shuffle 0.9446 (drop +0.0026)   roll 0.9401 (drop +0.0072)
+  MI    0.9200   shuffle 0.9184 (drop +0.0017)   roll 0.9167 (drop +0.0033)
+  STTC  0.9329   shuffle 0.9338 (drop -0.0009)   roll 0.9307 (drop +0.0022)
+  CD    0.9138   shuffle 0.9134 (drop +0.0004)   roll 0.9080 (drop +0.0058)
+  HYP   0.8950   shuffle 0.8942 (drop +0.0008)   roll 0.8935 (drop +0.0015)
+
+10 SEGMENTS
+  macro 0.9218   shuffle 0.9181 (drop +0.0036)   roll 0.9121 (drop +0.0097)
+  NORM  0.9473   shuffle 0.9391 (drop +0.0082)   roll 0.9344 (drop +0.0128)
+  MI    0.9200   shuffle 0.9147 (drop +0.0053)   roll 0.9098 (drop +0.0103)
+  STTC  0.9329   shuffle 0.9282 (drop +0.0047)   roll 0.9238 (drop +0.0091)
+  CD    0.9138   shuffle 0.9115 (drop +0.0023)   roll 0.9032 (drop +0.0106)
+  HYP   0.8950   shuffle 0.8973 (drop -0.0023)   roll 0.8891 (drop +0.0058)
+
+20 SEGMENTS
+  macro 0.9218   shuffle 0.8972 (drop +0.0246)   roll 0.8742 (drop +0.0476)
+  NORM  0.9473   shuffle 0.9166 (drop +0.0307)   roll 0.9028 (drop +0.0445)
+  MI    0.9200   shuffle 0.8961 (drop +0.0239)   roll 0.8930 (drop +0.0270)
+  STTC  0.9329   shuffle 0.9012 (drop +0.0316)   roll 0.8560 (drop +0.0769)
+  CD    0.9138   shuffle 0.8936 (drop +0.0202)   roll 0.8675 (drop +0.0463)
+  HYP   0.8950   shuffle 0.8785 (drop +0.0165)   roll 0.8517 (drop +0.0433)
+
+50 SEGMENTS
+  macro 0.9218   shuffle 0.8253 (drop +0.0965)   roll 0.8781 (drop +0.0436)
+  NORM  0.9473   shuffle 0.8693 (drop +0.0780)   roll 0.9187 (drop +0.0285)
+  MI    0.9200   shuffle 0.8529 (drop +0.0672)   roll 0.8954 (drop +0.0246)
+  STTC  0.9329   shuffle 0.7440 (drop +0.1889)   roll 0.8674 (drop +0.0655)
+  CD    0.9138   shuffle 0.8161 (drop +0.0977)   roll 0.8418 (drop +0.0720)
+  HYP   0.8950   shuffle 0.8443 (drop +0.0507)   roll 0.8674 (drop +0.0276)
+train 17084  val 2146  test 2158  device cuda
+epoch 01  loss 0.3902  val AUROC 0.8698  best 0.8698  (4s)
+epoch 02  loss 0.3266  val AUROC 0.8803  best 0.8803  (4s)
+epoch 03  loss 0.3158  val AUROC 0.8740  best 0.8803  (4s)
+epoch 04  loss 0.3071  val AUROC 0.8961  best 0.8961  (4s)
+epoch 05  loss 0.3058  val AUROC 0.9012  best 0.9012  (4s)
+epoch 06  loss 0.2972  val AUROC 0.8861  best 0.9012  (4s)
+epoch 07  loss 0.2908  val AUROC 0.8958  best 0.9012  (4s)
+epoch 08  loss 0.2854  val AUROC 0.8876  best 0.9012  (4s)
+epoch 09  loss 0.2774  val AUROC 0.8938  best 0.9012  (4s)
+epoch 10  loss 0.2696  val AUROC 0.9082  best 0.9082  (4s)
+epoch 11  loss 0.2635  val AUROC 0.9129  best 0.9129  (4s)
+epoch 12  loss 0.2596  val AUROC 0.9085  best 0.9129  (4s)
+epoch 13  loss 0.2538  val AUROC 0.9186  best 0.9186  (4s)
+epoch 14  loss 0.2491  val AUROC 0.9166  best 0.9186  (4s)
+epoch 15  loss 0.2455  val AUROC 0.9141  best 0.9186  (4s)
+epoch 16  loss 0.2400  val AUROC 0.9148  best 0.9186  (4s)
+epoch 17  loss 0.2336  val AUROC 0.9214  best 0.9214  (4s)
+epoch 18  loss 0.2288  val AUROC 0.9219  best 0.9219  (4s)
+epoch 19  loss 0.2205  val AUROC 0.9175  best 0.9219  (4s)
+epoch 20  loss 0.2148  val AUROC 0.9214  best 0.9219  (4s)
+epoch 21  loss 0.2042  val AUROC 0.9184  best 0.9219  (4s)
+epoch 22  loss 0.1961  val AUROC 0.9120  best 0.9219  (4s)
+epoch 23  loss 0.1866  val AUROC 0.9169  best 0.9219  (4s)
+epoch 24  loss 0.1772  val AUROC 0.9151  best 0.9219  (4s)
+epoch 25  loss 0.1650  val AUROC 0.9143  best 0.9219  (4s)
+epoch 26  loss 0.1546  val AUROC 0.9132  best 0.9219  (4s)
+epoch 27  loss 0.1414  val AUROC 0.9127  best 0.9219  (4s)
+epoch 28  loss 0.1313  val AUROC 0.9107  best 0.9219  (4s)
+epoch 29  loss 0.1251  val AUROC 0.9101  best 0.9219  (4s)
+epoch 30  loss 0.1216  val AUROC 0.9098  best 0.9219  (4s)
+
+TEST AUROC
+  macro 0.9192
+  NORM  0.9409
+  MI    0.9144
+  STTC  0.9331
+  CD    0.9166
+  HYP   0.8912
+
+2 SEGMENTS
+  macro 0.9192   shuffle 0.9193 (drop -0.0001)   roll 0.9201 (drop -0.0009)
+  NORM  0.9409   shuffle 0.9408 (drop +0.0001)   roll 0.9407 (drop +0.0002)
+  MI    0.9144   shuffle 0.9143 (drop +0.0001)   roll 0.9149 (drop -0.0005)
+  STTC  0.9331   shuffle 0.9329 (drop +0.0002)   roll 0.9346 (drop -0.0015)
+  CD    0.9166   shuffle 0.9177 (drop -0.0012)   roll 0.9156 (drop +0.0009)
+  HYP   0.8912   shuffle 0.8908 (drop +0.0003)   roll 0.8945 (drop -0.0034)
+
+5 SEGMENTS
+  macro 0.9192   shuffle 0.9192 (drop +0.0000)   roll 0.9181 (drop +0.0011)
+  NORM  0.9409   shuffle 0.9399 (drop +0.0010)   roll 0.9380 (drop +0.0029)
+  MI    0.9144   shuffle 0.9151 (drop -0.0007)   roll 0.9117 (drop +0.0027)
+  STTC  0.9331   shuffle 0.9328 (drop +0.0003)   roll 0.9337 (drop -0.0006)
+  CD    0.9166   shuffle 0.9158 (drop +0.0007)   roll 0.9128 (drop +0.0038)
+  HYP   0.8912   shuffle 0.8925 (drop -0.0014)   roll 0.8943 (drop -0.0032)
+
+10 SEGMENTS
+  macro 0.9192   shuffle 0.9173 (drop +0.0019)   roll 0.9108 (drop +0.0084)
+  NORM  0.9409   shuffle 0.9371 (drop +0.0038)   roll 0.9331 (drop +0.0078)
+  MI    0.9144   shuffle 0.9138 (drop +0.0007)   roll 0.9106 (drop +0.0038)
+  STTC  0.9331   shuffle 0.9322 (drop +0.0009)   roll 0.9208 (drop +0.0123)
+  CD    0.9166   shuffle 0.9120 (drop +0.0046)   roll 0.9008 (drop +0.0157)
+  HYP   0.8912   shuffle 0.8917 (drop -0.0005)   roll 0.8887 (drop +0.0025)
+
+20 SEGMENTS
+  macro 0.9192   shuffle 0.8994 (drop +0.0199)   roll 0.8797 (drop +0.0395)
+  NORM  0.9409   shuffle 0.9246 (drop +0.0163)   roll 0.9168 (drop +0.0241)
+  MI    0.9144   shuffle 0.9003 (drop +0.0141)   roll 0.8965 (drop +0.0180)
+  STTC  0.9331   shuffle 0.9004 (drop +0.0327)   roll 0.8528 (drop +0.0803)
+  CD    0.9166   shuffle 0.8942 (drop +0.0223)   roll 0.8823 (drop +0.0343)
+  HYP   0.8912   shuffle 0.8772 (drop +0.0139)   roll 0.8503 (drop +0.0409)
+
+50 SEGMENTS
+  macro 0.9192   shuffle 0.8278 (drop +0.0914)   roll 0.8839 (drop +0.0354)
+  NORM  0.9409   shuffle 0.8662 (drop +0.0747)   roll 0.9268 (drop +0.0141)
+  MI    0.9144   shuffle 0.8657 (drop +0.0487)   roll 0.8930 (drop +0.0214)
+  STTC  0.9331   shuffle 0.7341 (drop +0.1990)   roll 0.8610 (drop +0.0721)
+  CD    0.9166   shuffle 0.8398 (drop +0.0768)   roll 0.8681 (drop +0.0485)
+  HYP   0.8912   shuffle 0.8332 (drop +0.0580)   roll 0.8704 (drop +0.0208)
+train 17084  val 2146  test 2158  device cuda
+epoch 01  loss 0.4115  val AUROC 0.8641  best 0.8641  (4s)
+epoch 02  loss 0.3334  val AUROC 0.8697  best 0.8697  (4s)
+epoch 03  loss 0.3207  val AUROC 0.8782  best 0.8782  (4s)
+epoch 04  loss 0.3129  val AUROC 0.8868  best 0.8868  (4s)
+epoch 05  loss 0.3056  val AUROC 0.8871  best 0.8871  (4s)
+epoch 06  loss 0.2994  val AUROC 0.8992  best 0.8992  (4s)
+epoch 07  loss 0.2938  val AUROC 0.8784  best 0.8992  (4s)
+epoch 08  loss 0.2874  val AUROC 0.8940  best 0.8992  (4s)
+epoch 09  loss 0.2807  val AUROC 0.8975  best 0.8992  (4s)
+epoch 10  loss 0.2749  val AUROC 0.9114  best 0.9114  (4s)
+epoch 11  loss 0.2687  val AUROC 0.9124  best 0.9124  (4s)
+epoch 12  loss 0.2622  val AUROC 0.9086  best 0.9124  (4s)
+epoch 13  loss 0.2592  val AUROC 0.9162  best 0.9162  (4s)
+epoch 14  loss 0.2508  val AUROC 0.9127  best 0.9162  (4s)
+epoch 15  loss 0.2458  val AUROC 0.9202  best 0.9202  (4s)
+epoch 16  loss 0.2398  val AUROC 0.9198  best 0.9202  (4s)
+epoch 17  loss 0.2340  val AUROC 0.9238  best 0.9238  (4s)
+epoch 18  loss 0.2323  val AUROC 0.9225  best 0.9238  (4s)
+epoch 19  loss 0.2232  val AUROC 0.9206  best 0.9238  (4s)
+epoch 20  loss 0.2171  val AUROC 0.9173  best 0.9238  (4s)
+epoch 21  loss 0.2114  val AUROC 0.9191  best 0.9238  (4s)
+epoch 22  loss 0.2025  val AUROC 0.9235  best 0.9238  (4s)
+epoch 23  loss 0.1938  val AUROC 0.9188  best 0.9238  (4s)
+epoch 24  loss 0.1832  val AUROC 0.9207  best 0.9238  (4s)
+epoch 25  loss 0.1730  val AUROC 0.9185  best 0.9238  (4s)
+epoch 26  loss 0.1610  val AUROC 0.9141  best 0.9238  (4s)
+epoch 27  loss 0.1520  val AUROC 0.9171  best 0.9238  (4s)
+epoch 28  loss 0.1415  val AUROC 0.9139  best 0.9238  (4s)
+epoch 29  loss 0.1342  val AUROC 0.9137  best 0.9238  (4s)
+epoch 30  loss 0.1310  val AUROC 0.9120  best 0.9238  (4s)
+
+TEST AUROC
+  macro 0.9173
+  NORM  0.9401
+  MI    0.9129
+  STTC  0.9339
+  CD    0.9148
+  HYP   0.8847
+
+2 SEGMENTS
+  macro 0.9173   shuffle 0.9169 (drop +0.0004)   roll 0.9165 (drop +0.0008)
+  NORM  0.9401   shuffle 0.9401 (drop -0.0000)   roll 0.9385 (drop +0.0015)
+  MI    0.9129   shuffle 0.9124 (drop +0.0005)   roll 0.9140 (drop -0.0011)
+  STTC  0.9339   shuffle 0.9334 (drop +0.0005)   roll 0.9347 (drop -0.0008)
+  CD    0.9148   shuffle 0.9144 (drop +0.0004)   roll 0.9119 (drop +0.0029)
+  HYP   0.8847   shuffle 0.8841 (drop +0.0006)   roll 0.8833 (drop +0.0014)
+
+5 SEGMENTS
+  macro 0.9173   shuffle 0.9170 (drop +0.0003)   roll 0.9144 (drop +0.0029)
+  NORM  0.9401   shuffle 0.9403 (drop -0.0002)   roll 0.9361 (drop +0.0040)
+  MI    0.9129   shuffle 0.9149 (drop -0.0020)   roll 0.9158 (drop -0.0029)
+  STTC  0.9339   shuffle 0.9353 (drop -0.0014)   roll 0.9330 (drop +0.0009)
+  CD    0.9148   shuffle 0.9128 (drop +0.0020)   roll 0.9097 (drop +0.0051)
+  HYP   0.8847   shuffle 0.8818 (drop +0.0029)   roll 0.8774 (drop +0.0073)
+
+10 SEGMENTS
+  macro 0.9173   shuffle 0.9135 (drop +0.0038)   roll 0.9061 (drop +0.0112)
+  NORM  0.9401   shuffle 0.9347 (drop +0.0054)   roll 0.9320 (drop +0.0081)
+  MI    0.9129   shuffle 0.9142 (drop -0.0013)   roll 0.9121 (drop +0.0008)
+  STTC  0.9339   shuffle 0.9303 (drop +0.0036)   roll 0.9233 (drop +0.0106)
+  CD    0.9148   shuffle 0.9069 (drop +0.0078)   roll 0.8982 (drop +0.0166)
+  HYP   0.8847   shuffle 0.8814 (drop +0.0032)   roll 0.8650 (drop +0.0197)
+
+20 SEGMENTS
+  macro 0.9173   shuffle 0.8969 (drop +0.0204)   roll 0.8783 (drop +0.0390)
+  NORM  0.9401   shuffle 0.9165 (drop +0.0236)   roll 0.9034 (drop +0.0366)
+  MI    0.9129   shuffle 0.9120 (drop +0.0010)   roll 0.9007 (drop +0.0122)
+  STTC  0.9339   shuffle 0.9076 (drop +0.0263)   roll 0.8712 (drop +0.0627)
+  CD    0.9148   shuffle 0.8896 (drop +0.0251)   roll 0.8772 (drop +0.0376)
+  HYP   0.8847   shuffle 0.8589 (drop +0.0258)   roll 0.8391 (drop +0.0456)
+
+50 SEGMENTS
+  macro 0.9173   shuffle 0.8361 (drop +0.0811)   roll 0.8838 (drop +0.0335)
+  NORM  0.9401   shuffle 0.8649 (drop +0.0752)   roll 0.9221 (drop +0.0180)
+  MI    0.9129   shuffle 0.8692 (drop +0.0437)   roll 0.8990 (drop +0.0139)
+  STTC  0.9339   shuffle 0.7842 (drop +0.1497)   roll 0.8889 (drop +0.0450)
+  CD    0.9148   shuffle 0.8401 (drop +0.0747)   roll 0.8606 (drop +0.0542)
+  HYP   0.8847   shuffle 0.8222 (drop +0.0625)   roll 0.8483 (drop +0.0364)
+3 seeds
+
+Test AUROC
+class            test AUROC
+NORM      0.9427 +/- 0.0032
+MI        0.9158 +/- 0.0031
+STTC      0.9333 +/- 0.0004
+CD        0.9150 +/- 0.0012
+HYP       0.8903 +/- 0.0042
+macro     0.9194 +/- 0.0018
+
+AUROC drop under shuffle (test minus probed), by number of segments
+class                 2 seg                5 seg               10 seg               20 seg               50 seg
+NORM      0.0005 +/- 0.0006    0.0012 +/- 0.0011    0.0058 +/- 0.0018    0.0235 +/- 0.0059    0.0760 +/- 0.0014
+MI        0.0004 +/- 0.0003   -0.0003 +/- 0.0015    0.0016 +/- 0.0028    0.0130 +/- 0.0094    0.0532 +/- 0.0101
+STTC      0.0006 +/- 0.0003   -0.0007 +/- 0.0007    0.0031 +/- 0.0016    0.0302 +/- 0.0028    0.1792 +/- 0.0212
+CD       -0.0008 +/- 0.0009    0.0010 +/- 0.0007    0.0049 +/- 0.0023    0.0226 +/- 0.0020    0.0831 +/- 0.0104
+HYP       0.0009 +/- 0.0007    0.0008 +/- 0.0018    0.0001 +/- 0.0023    0.0187 +/- 0.0051    0.0570 +/- 0.0048
+macro     0.0003 +/- 0.0003    0.0004 +/- 0.0004    0.0031 +/- 0.0009    0.0216 +/- 0.0021    0.0897 +/- 0.0064
+
+AUROC drop under roll (test minus probed), by number of segments
+class                 2 seg                5 seg               10 seg               20 seg               50 seg
+NORM      0.0020 +/- 0.0017    0.0047 +/- 0.0018    0.0096 +/- 0.0023    0.0351 +/- 0.0084    0.0202 +/- 0.0061
+MI        0.0006 +/- 0.0020    0.0010 +/- 0.0028    0.0049 +/- 0.0039    0.0191 +/- 0.0061    0.0200 +/- 0.0045
+STTC     -0.0009 +/- 0.0004    0.0008 +/- 0.0011    0.0107 +/- 0.0013    0.0733 +/- 0.0076    0.0609 +/- 0.0115
+CD        0.0012 +/- 0.0013    0.0049 +/- 0.0008    0.0143 +/- 0.0027    0.0394 +/- 0.0050    0.0582 +/- 0.0100
+HYP      -0.0004 +/- 0.0021    0.0019 +/- 0.0043    0.0093 +/- 0.0075    0.0433 +/- 0.0019    0.0282 +/- 0.0064
+macro     0.0005 +/- 0.0010    0.0027 +/- 0.0012    0.0098 +/- 0.0011    0.0420 +/- 0.0039    0.0375 +/- 0.0044

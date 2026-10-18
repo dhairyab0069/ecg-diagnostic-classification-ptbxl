@@ -14,6 +14,7 @@ module load anaconda3/2024.06
 source activate ecg
 cd "$SLURM_SUBMIT_DIR"
 export PYTHONUNBUFFERED=1   # so epoch lines show up in the log as they happen
+export PYTHONPATH="$SLURM_SUBMIT_DIR/src${PYTHONPATH:+:$PYTHONPATH}"   # use this checkout's code, not wherever the env was installed from
 
 NAME=$(python -c "import yaml, sys; print(yaml.safe_load(open(sys.argv[1]))['name'])" "$CONFIG")
 for seed in 0 1 2; do

@@ -3,6 +3,9 @@
 Example:
     python scripts/predict.py runs/resnet1d_baseline        # once per run, for the confusion matrices
     python scripts/plot_results.py --out figures
+
+Figures 6-9 and activation_metrics.csv compare the ReLU, LeakyReLU and tanh models and are
+made only when all three runs exist.
 """
 import argparse
 import glob
@@ -21,12 +24,14 @@ from ecg import CLASSES
 from ecg.metrics import score
 
 RUNS = {"Baseline": "runs/resnet1d_baseline", "Shuffle-trained": "runs/resnet1d_shuffle_trained"}
+ACT_RUNS = {"ReLU": "runs/resnet1d_baseline", "LeakyReLU": "runs/resnet1d_leaky_relu", "tanh": "runs/resnet1d_tanh"}
 KS = ["2", "5", "10", "20", "50"]
 SEG_LEN = {k: 10 / int(k) for k in KS}  # seconds per segment in a 10 s recording
 ROWS = CLASSES + ["macro"]
 
 SURFACE, INK, INK_2, GRID = "#fcfcfb", "#0b0b0b", "#52514e", "#e4e3df"
-BLUE, ORANGE = "#2a78d6", "#eb6834"
+BLUE, ORANGE, AQUA = "#2a78d6", "#eb6834", "#1baf7a"
+ACT_COLORS = {"ReLU": BLUE, "LeakyReLU": ORANGE, "tanh": AQUA}
 SEQ = LinearSegmentedColormap.from_list("seq", ["#f0efec", "#cde2fb", "#86b6ef", "#3987e5", "#1c5cab", "#0d366b"])
 DIV = LinearSegmentedColormap.from_list("div", ["#1c5cab", "#3987e5", "#86b6ef", "#f0efec", "#f2a3a2", "#e34948", "#a32a2a"])
 
@@ -235,6 +240,127 @@ def plot_training_curves(out):
     save(fig, out, "fig1_training_curves.png")
 
 
+def test_scores(results, cls):
+    return np.array([score(r["test"], cls) for r in results])
+
+
+def plot_activation_auroc(results, out):
+    """Test AUROC per class for each activation, mean +/- std over seeds, as a dot plot."""
+    fig, ax = plt.subplots(figsize=(9, 3.6))
+    offsets = np.linspace(-0.22, 0.22, len(results))
+    for off, (model, rs) in zip(offsets, results.items()):
+        v = np.array([test_scores(rs, c) for c in ROWS])
+        x = np.arange(len(ROWS)) + off
+        ax.errorbar(x, v.mean(1), yerr=v.std(1), fmt="none", ecolor=ACT_COLORS[model], elinewidth=2, capsize=0)
+        ax.plot(x, v.mean(1), "o", color=ACT_COLORS[model], markersize=8, markeredgecolor=SURFACE,
+                markeredgewidth=1.5, label=model)
+    ax.axvline(len(CLASSES) - 0.5, color=GRID, linewidth=1)
+    ax.set_xticks(range(len(ROWS)), [r if r != "macro" else "Macro" for r in ROWS])
+    ax.tick_params(axis="x", length=0)
+    ax.grid(axis="y", color=GRID, linewidth=0.8)
+    ax.set_ylabel("Test AUROC")
+    ax.legend(frameon=False, loc="lower left", ncol=3)
+    ax.set_title("Test AUROC by label (dot: mean of 3 seeds; line: ± std)")
+    fig.suptitle("LeakyReLU matches ReLU; tanh is slightly lower", x=0.02, ha="left", fontweight="bold", fontsize=12)
+    fig.tight_layout()
+    save(fig, out, "fig6_activation_auroc.png")
+
+
+def plot_activation_sweep(results, out):
+    """Macro AUROC drop vs segment length for each activation, shuffle and roll control side by side."""
+    fig, axes = plt.subplots(1, 2, figsize=(9, 3.6), sharey=True)
+    x = [SEG_LEN[k] for k in KS]
+    for ax, (kind, title) in zip(axes, [("shuffle", "Shuffle"), ("roll", "Roll control")]):
+        for model, rs in results.items():
+            d = drops(rs, kind, "macro")
+            mean, std = d.mean(0), d.std(0)
+            color = ACT_COLORS[model]
+            ax.fill_between(x, mean - std, mean + std, color=color, alpha=0.12, linewidth=0)
+            ax.plot(x, mean, color=color, linewidth=2, marker="o", markersize=6,
+                    markeredgecolor=SURFACE, markeredgewidth=1.5, label=model)
+        ax.set_xscale("log")
+        ax.set_xticks(x, [f"{v:g} s" for v in x])
+        ax.minorticks_off()
+        ax.invert_xaxis()
+        ax.axhline(0, color=INK_2, linewidth=0.8)
+        ax.grid(axis="y", color=GRID, linewidth=0.8)
+        ax.set_xlabel("Segment length")
+        ax.set_title(title)
+    axes[0].set_ylabel("Macro AUROC drop")
+    axes[0].legend(frameon=False, loc="upper left")
+    fig.suptitle("All three activations rely on order only within a heartbeat", x=0.02, ha="left",
+                 fontweight="bold", fontsize=12)
+    fig.tight_layout()
+    save(fig, out, "fig8_activation_sweep.png")
+
+
+def plot_activation_class_drop(results, out):
+    """Per-class AUROC drop under 0.2 s shuffle and roll control, for each activation."""
+    k = KS[-1]
+    fig, axes = plt.subplots(1, 2, figsize=(9, 3.6), sharey=True)
+    offsets = np.linspace(-0.22, 0.22, len(results))
+    for ax, (kind, title) in zip(axes, [("shuffle", "Shuffle, 0.2 s"), ("roll", "Roll control, 0.2 s")]):
+        for off, (model, rs) in zip(offsets, results.items()):
+            d = np.array([drops(rs, kind, c)[:, KS.index(k)] for c in ROWS])
+            x = np.arange(len(ROWS)) + off
+            ax.errorbar(x, d.mean(1), yerr=d.std(1), fmt="none", ecolor=ACT_COLORS[model], elinewidth=2)
+            ax.plot(x, d.mean(1), "o", color=ACT_COLORS[model], markersize=7, markeredgecolor=SURFACE,
+                    markeredgewidth=1.5, label=model)
+        ax.axvline(len(CLASSES) - 0.5, color=GRID, linewidth=1)
+        ax.set_xticks(range(len(ROWS)), [r if r != "macro" else "Macro" for r in ROWS])
+        ax.tick_params(axis="x", length=0)
+        ax.grid(axis="y", color=GRID, linewidth=0.8)
+        ax.set_ylim(bottom=0)
+        ax.set_title(title)
+    axes[0].set_ylabel("AUROC drop")
+    axes[0].legend(frameon=False, loc="upper left")
+    fig.suptitle("STTC depends most on order inside a beat, for every activation", x=0.02, ha="left",
+                 fontweight="bold", fontsize=12)
+    fig.tight_layout()
+    save(fig, out, "fig9_activation_class_drop.png")
+
+
+def plot_activation_training(out):
+    """Train loss and validation macro AUROC per epoch for each activation."""
+    fig, axes = plt.subplots(1, 2, figsize=(9, 3.4))
+    for model, run_dir in ACT_RUNS.items():
+        hs = load_json(run_dir, "history.json")
+        epochs = [h["epoch"] for h in hs[0]]
+        for ax, key in zip(axes, ["train_loss", "val_macro_auroc"]):
+            v = np.array([[h[key] for h in run] for run in hs])
+            ax.fill_between(epochs, v.min(0), v.max(0), color=ACT_COLORS[model], alpha=0.12, linewidth=0)
+            ax.plot(epochs, v.mean(0), color=ACT_COLORS[model], linewidth=2, label=model)
+    for ax, title in zip(axes, ["Training loss", "Validation macro AUROC"]):
+        ax.set_title(title)
+        ax.set_xlabel("Epoch")
+        ax.grid(axis="y", color=GRID, linewidth=0.8)
+    axes[1].set_ylim(0.85, None)
+    axes[1].legend(frameon=False, loc="lower right")
+    fig.tight_layout()
+    save(fig, out, "fig7_activation_training.png")
+
+
+def write_activation_metrics(results, out):
+    """One row per activation and class: test AUROC, drops at 1 s and 0.2 s, best epoch."""
+    header = ["activation", "label", "test_auroc_mean", "test_auroc_std",
+              "shuffle_drop_1s", "roll_drop_1s", "shuffle_drop_0.2s", "roll_drop_0.2s",
+              "order_effect_0.2s", "best_epoch_mean"]
+    lines = [",".join(header)]
+    for model, rs in results.items():
+        hs = load_json(ACT_RUNS[model], "history.json")
+        best_epoch = np.mean([np.argmax([h["val_macro_auroc"] for h in run]) + 1 for run in hs])
+        for c in ROWS:
+            t = test_scores(rs, c)
+            sh, ro = drops(rs, "shuffle", c).mean(0), drops(rs, "roll", c).mean(0)
+            i1, i02 = KS.index("10"), KS.index("50")
+            row = [model, c, t.mean(), t.std(), sh[i1], ro[i1], sh[i02], ro[i02], sh[i02] - ro[i02], best_epoch]
+            lines.append(",".join(f"{v:.4f}" if isinstance(v, float) else str(v) for v in row))
+    path = os.path.join(out, "activation_metrics.csv")
+    with open(path, "w") as f:
+        f.write("\n".join(lines) + "\n")
+    print(f"wrote {path}")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default="figures")
@@ -245,6 +371,13 @@ def main():
     plot_sweep(results, args.out)
     plot_drop_heatmaps(results, args.out)
     plot_training_curves(args.out)
+    if all(glob.glob(os.path.join(d, "seed*", "results.json")) for d in ACT_RUNS.values()):
+        act = {model: load_json(d, "results.json") for model, d in ACT_RUNS.items()}
+        plot_activation_auroc(act, args.out)
+        plot_activation_sweep(act, args.out)
+        plot_activation_class_drop(act, args.out)
+        plot_activation_training(args.out)
+        write_activation_metrics(act, args.out)
     preds = load_preds(RUNS["Baseline"])
     if preds:
         plot_label_confusion(preds, args.out)

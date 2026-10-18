@@ -9,6 +9,8 @@ resolved config in `config.yaml`, and the 3-seed means in `runs/<model>/summary.
 | `setup_11138450.log` | `scripts/slurm_setup.sh` | Environment install, PTB-XL download (43,598 files), signal cache (21,388 records), `pytest` (6 passed) |
 | `train_baseline_11138451.log` | `scripts/slurm_train.sh` | Baseline: 30 epochs × 3 seeds, test and probe AUROC per seed, then the aggregate tables |
 | `train_shuffle_trained_11138452.log` | `scripts/slurm_train.sh configs/shuffle_trained.yaml` | Shuffle-trained model, same layout |
+| `train_leaky_relu_11184009.log` | `scripts/slurm_train.sh configs/leaky_relu.yaml` | LeakyReLU model, same layout |
+| `train_tanh_11184010.log` | `scripts/slurm_train.sh configs/tanh.yaml` | tanh model, same layout |
 | `predict_11139237.log` | `scripts/slurm_predict.sh` | Saving per-record predictions for the confusion matrices |
 
 Each training log ends with the 3-seed tables printed by `scripts/aggregate.py`. Hardware: one NVIDIA V100-SXM2
