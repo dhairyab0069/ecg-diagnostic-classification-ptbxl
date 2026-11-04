@@ -16,7 +16,6 @@ import numpy as np
 import wfdb
 from matplotlib.animation import FuncAnimation, PillowWriter
 from matplotlib.colors import LinearSegmentedColormap
-
 from plot_results import ACT_COLORS, ACT_RUNS, BLUE, GRID, INK, INK_2, KS, ORANGE, SEG_LEN, SURFACE, load_json
 
 RECORD = "records100/00000/00079_lr"  # clean normal ECG from the test fold

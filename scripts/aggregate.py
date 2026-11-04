@@ -61,7 +61,7 @@ def main():
     probe_names = list(rs[0]["probe"][ks[0]])
     for name in probe_names:
         print_table(f"AUROC drop under {name} (test minus probed), by number of segments",
-                    {f"{k} seg": lambda c, k=k: test(c) - probed(k, name)(c) for k in ks})
+                    {f"{k} seg": lambda c, k=k, name=name: test(c) - probed(k, name)(c) for k in ks})
 
     summary = {c: {"test": float(test(c).mean()),
                    **{f"{name}_{k}": float(probed(k, name)(c).mean()) for name in probe_names for k in ks}}
