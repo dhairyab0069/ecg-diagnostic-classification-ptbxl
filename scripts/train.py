@@ -74,7 +74,7 @@ def run_probes(model, loader, device, num_segments, seed):
         out[str(k)] = {}
         for name, fn in PROBES.items():
             torch.manual_seed(seed)  # same permutations / shifts for every model and seed
-            out[str(k)][name] = evaluate(model, loader, device, lambda x: fn(x, k))
+            out[str(k)][name] = evaluate(model, loader, device, lambda x, fn=fn, k=k: fn(x, k))
     return out
 
 

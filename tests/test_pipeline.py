@@ -9,8 +9,8 @@ import numpy as np
 import pytest
 import torch
 import torch.nn as nn
-
 from conftest import ROOT, make_dataset
+
 from ecg import CLASSES
 from ecg.engine import evaluate, predict, train_one_epoch
 from ecg.model import ResNet1D
